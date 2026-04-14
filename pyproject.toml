@@ -1,0 +1,218 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tamago"
+dynamic = ["version"]
+description = "Multi-format game archive tool"
+requires-python = ">=3.10"
+license = "MIT"
+keywords = []
+authors = [
+  { name = "Kenkyuuka", email = "kenkyuuka@proton.me" },
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+]
+dependencies = ["construct>=2.10"]
+
+[project.urls]
+Homepage = "https://github.com/kenkyuuka/tamago"
+Issues = "https://github.com/kenkyuuka/tamago/issues"
+Source = "https://github.com/kenkyuuka/tamago"
+
+[project.optional-dependencies]
+images = ["Pillow>=9.0"]
+
+[project.scripts]
+tamago = "tamago.cli:main"
+
+[project.entry-points."tamago.formats"]
+xp3 = "tamago.formats.xp3.handler:XP3Handler"
+det = "tamago.formats.det.handler:DETHandler"
+gsp = "tamago.formats.gsp.handler:GSPHandler"
+advhd = "tamago.formats.advhd.handler:ARCHandler"
+
+[project.entry-points."tamago.formats.xp3.encryption"]
+fixed-xor = "tamago.formats.xp3.encryption.fixed_xor:FixedXorEncryption"
+hash-xor = "tamago.formats.xp3.encryption.hash_xor:HashXorEncryption"
+null = "tamago.formats.xp3.encryption.null:NullEncryption"
+poringsoft = "tamago.formats.xp3.encryption.hash_derived:PoringSoftEncryption"
+cxcrypt = "tamago.formats.xp3.encryption.cxcrypt:CxEncryption"
+pinpoint = "tamago.formats.xp3.encryption.pinpoint:PinPointEncryption"
+
+[tool.hatch.build.hooks.custom]
+
+[tool.hatch.version]
+path = "src/tamago/__about__.py"
+
+[tool.hatch.envs.default]
+dependencies = [
+  "coverage[toml]>=6.5",
+  "pytest",
+  "pytest-xdist",
+  "frida-tools",
+  "Pillow>=9.0",
+]
+
+[tool.hatch.envs.default.scripts]
+test = "pytest -n auto --maxprocesses 8 src/tamago/tests {args}"
+test-xp3 = "pytest -n auto --maxprocesses 8 src/tamago/tests/xp3 {args}"
+test-det = "pytest -n auto --maxprocesses 8 src/tamago/tests/det {args}"
+test-gsp = "pytest -n auto --maxprocesses 8 src/tamago/tests/gsp {args}"
+test-advhd = "pytest -n auto --maxprocesses 8 src/tamago/tests/advhd {args}"
+test-tamago = "pytest -n auto --maxprocesses 8 src/tamago/tests/test_cli.py {args}"
+test-nonfree = "pytest -n auto --maxprocesses 8 src/tamago/tests -m nonfree {args}"
+test-cov = "coverage run -m pytest -n auto --maxprocesses 8 src/tamago/tests {args}"
+
+cov-report = [
+  "- coverage combine",
+  "coverage report",
+]
+cov = [
+  "test-cov",
+  "cov-report",
+]
+
+[tool.hatch.envs.hatch-test]
+extra-dependencies = [
+  "Pillow>=9.0",
+]
+
+[[tool.hatch.envs.all.matrix]]
+python = ["3.10", "3.11", "3.12"]
+
+[tool.hatch.envs.lint]
+dependencies = [
+  "black>=23.1.0",
+  "mypy>=1.0.0",
+  "pytest",
+  "ruff>=0.0.243",
+]
+[tool.hatch.envs.lint.scripts]
+typing = "mypy --install-types --non-interactive {args:src/tamago}"
+style = [
+  "ruff check {args:.}",
+  "black --check --diff {args:.}",
+]
+fmt = [
+  "black {args:.}",
+  "ruff check --fix {args:.}",
+  "style",
+]
+all = [
+  "style",
+  "typing",
+]
+
+[tool.black]
+target-version = ["py310"]
+line-length = 120
+skip-string-normalization = true
+
+[tool.ruff]
+target-version = "py310"
+line-length = 120
+extend-exclude = ["scripts", "packages"]
+[tool.ruff.lint]
+select = [
+  "A",
+  "ARG",
+  "B",
+  "C",
+  "DTZ",
+  "E",
+  "EM",
+  "F",
+  "FBT",
+  "I",
+  "ICN",
+  "ISC",
+  "N",
+  "PLC",
+  "PLE",
+  "PLR",
+  "PLW",
+  "Q",
+  "RUF",
+  "S",
+  "T",
+  "TID",
+  "UP",
+  "W",
+  "YTT",
+]
+ignore = [
+  # Allow non-abstract empty methods in abstract base classes
+  "B027",
+  # Allow boolean positional values in function calls, like `dict.get(... True)`
+  "FBT002", "FBT003",
+  # Ignore checks for possible passwords
+  "S105", "S106", "S107",
+  # Ignore complexity
+  "C901", "PLR0911", "PLR0912", "PLR0913", "PLR0915",
+  # Quote style managed by black (skip-string-normalization = true)
+  "Q000",
+  # Allow string/f-string literals in exceptions
+  "EM101", "EM102",
+  # Allow implicit string concatenation on one line
+  "ISC001",
+  # Allow print() in CLI and diagnostic code
+  "T201",
+  # Allow conditional/lazy imports not at top level
+  "PLC0415",
+  # Allow raise without from in except blocks
+  "B904",
+]
+unfixable = [
+  # Don't touch unused imports
+  "F401",
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["tamago"]
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.ruff.lint.per-file-ignores]
+# Tests can use magic values, assertions, and relative imports
+"**/tests/**/*" = ["ARG002", "F401", "PLR2004", "RUF059", "S101", "TID252"]
+"**/src/**/*" = ["A002", "ARG002", "RUF023", "S101", "TID252"]
+
+[tool.mypy]
+[[tool.mypy.overrides]]
+module = "identify_encryption"
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+markers = [
+    "unit: pure logic tests with no filesystem or external dependencies",
+    "integration: tests that read/write XP3 files or use the detection pipeline",
+    "nonfree: tests that require real game data in nonfree/ directories",
+]
+
+[tool.coverage.run]
+source_pkgs = ["tamago"]
+branch = true
+parallel = true
+omit = [
+  "src/tamago/__about__.py",
+]
+
+[tool.coverage.paths]
+tamago = ["src/tamago", "*/tamago/src/tamago"]
+
+[tool.coverage.report]
+exclude_lines = [
+  "no cov",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+]

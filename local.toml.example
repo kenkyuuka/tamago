@@ -1,0 +1,3 @@
+[paths]
+# Directory containing installed KiriKiri games (used by scripts/survey_installed_games.py)
+# scan_dir = "/path/to/installed/games"
