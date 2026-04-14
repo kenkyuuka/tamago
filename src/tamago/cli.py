@@ -18,6 +18,7 @@ EXTENSION_FORMATS = {
 }
 
 
+
 def get_format_handlers():
     """Discover format handlers registered under the ``tamago.formats`` entry point group."""
     handlers = {}

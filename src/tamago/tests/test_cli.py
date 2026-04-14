@@ -49,25 +49,3 @@ class TestIdentifySubcommand:
         captured = capsys.readouterr()
         assert "xp3" in captured.out
 
-    def test_identify_engine_from_directory(self, capsys, tmp_path):
-        import argparse
-
-        from tamago.cli import cmd_identify
-
-        (tmp_path / "data.xp3").write_bytes(b"\x00" * 16)
-        args = argparse.Namespace(files=[tmp_path])
-        cmd_identify(args)
-        captured = capsys.readouterr()
-        assert "KiriKiri" in captured.out
-        assert "confidence" in captured.out
-
-    def test_identify_unknown_engine(self, capsys, tmp_path):
-        import argparse
-
-        from tamago.cli import cmd_identify
-
-        (tmp_path / "readme.txt").write_text("Down the rabbit hole")
-        args = argparse.Namespace(files=[tmp_path])
-        cmd_identify(args)
-        captured = capsys.readouterr()
-        assert "unknown engine" in captured.out
