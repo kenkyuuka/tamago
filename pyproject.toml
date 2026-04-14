@@ -6,6 +6,7 @@ build-backend = "hatchling.build"
 name = "tamagoarc"
 dynamic = ["version"]
 description = "Multi-format game archive tool"
+readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
 keywords = []
