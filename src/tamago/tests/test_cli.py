@@ -48,4 +48,3 @@ class TestIdentifySubcommand:
         cmd_identify(args)
         captured = capsys.readouterr()
         assert "xp3" in captured.out
-

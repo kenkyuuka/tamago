@@ -15,8 +15,8 @@ provide the encryption keys.  Encrypted files are identified by ``byte[1]
 
 # fmt: off
 
-# Bit permutation tables for decryption, indexed by key (0–7).
-# Each table has 8 entries giving the shift for bits 0–7.
+# Bit permutation tables for decryption, indexed by key (0-7).
+# Each table has 8 entries giving the shift for bits 0-7.
 # Positive = left shift, negative = right shift.
 _DECRYPT_TABLES: dict[int, list[int]] = {
     0: [ 2,  6, -1,  0,  1, -5, -2, -1],
@@ -83,14 +83,18 @@ def _shuffle(body: bytearray, key: int) -> None:
             body[i], body[i + 1] = body[i + 1], body[i]
     elif key == 1:
         for i in range(0, len(body) - 3, 4):
-            body[i], body[i + 1], body[i + 2], body[i + 3] = (
-                body[i + 2], body[i + 3], body[i], body[i + 1]
-            )
+            body[i], body[i + 1], body[i + 2], body[i + 3] = (body[i + 2], body[i + 3], body[i], body[i + 1])
     elif key == 2:
         for i in range(0, len(body) - 7, 8):
             a, b, c, d, e, f, g, h = (
-                body[i], body[i + 1], body[i + 2], body[i + 3],
-                body[i + 4], body[i + 5], body[i + 6], body[i + 7],
+                body[i],
+                body[i + 1],
+                body[i + 2],
+                body[i + 3],
+                body[i + 4],
+                body[i + 5],
+                body[i + 6],
+                body[i + 7],
             )
             body[i], body[i + 1], body[i + 2], body[i + 3] = g, e, f, h
             body[i + 4], body[i + 5], body[i + 6], body[i + 7] = b, c, a, d

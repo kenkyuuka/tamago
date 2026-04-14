@@ -526,6 +526,6 @@ class TestGSPFileNonfree:
                     assert len(rebuilt_gsp.files) == len(original_names), f'{sample}: file count mismatch'
                     for i, f in enumerate(rebuilt_gsp.files):
                         assert f.file_name == original_names[i], f'{sample}: name mismatch at {i}'
-                        assert rebuilt_gsp.read(f) == original_data[f.file_name], (
-                            f'{sample}/{f.file_name}: content mismatch'
-                        )
+                        assert (
+                            rebuilt_gsp.read(f) == original_data[f.file_name]
+                        ), f'{sample}/{f.file_name}: content mismatch'

@@ -98,10 +98,7 @@ def find_game_dirs(scan_dir):
     # Collect every directory that directly contains a non-ignored .exe.
     exe_dirs = set()
     for root, _dirs, files in os.walk(scan_dir):
-        if any(
-            f.lower().endswith(_GAME_EXE_EXTENSION) and f.lower() not in _IGNORED_EXES
-            for f in files
-        ):
+        if any(f.lower().endswith(_GAME_EXE_EXTENSION) and f.lower() not in _IGNORED_EXES for f in files):
             exe_dirs.add(root)
 
     # Prune ancestors: if dir A is a proper ancestor of dir B, and both
@@ -175,9 +172,7 @@ def main():
         description="Survey installed games for engine identification and PE version info."
     )
     parser.add_argument("scan_dir", nargs="?", default=None, help="Directory to scan")
-    parser.add_argument(
-        "-v", "--verbose", action="store_true", help="Show full details including engine evidence"
-    )
+    parser.add_argument("-v", "--verbose", action="store_true", help="Show full details including engine evidence")
     parser.add_argument(
         "--unknown-only",
         action="store_true",

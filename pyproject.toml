@@ -171,6 +171,12 @@ ignore = [
   "PLC0415",
   # Allow raise without from in except blocks
   "B904",
+  # Allow boolean-typed positional arguments (decrypt=True, encrypt=True, etc.)
+  "FBT001",
+  # Allow magic values in comparisons (channel counts, bit widths, etc.)
+  "PLR2004",
+  # Allow global statement for lazy-init patterns
+  "PLW0603",
 ]
 unfixable = [
   # Don't touch unused imports
@@ -187,6 +193,7 @@ ban-relative-imports = "all"
 # Tests can use magic values, assertions, and relative imports
 "**/tests/**/*" = ["ARG002", "F401", "PLR2004", "RUF059", "S101", "TID252"]
 "**/src/**/*" = ["A002", "ARG002", "RUF023", "S101", "TID252"]
+"hatch_build.py" = ["ARG002", "S603", "S607"]
 
 [tool.mypy]
 [[tool.mypy.overrides]]

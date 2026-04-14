@@ -578,13 +578,9 @@ class TestARCFileNonfree:
                         arc.write(filepath, arcname=name)
 
                 with ARCFile(rebuilt_path) as rebuilt:
-                    assert len(rebuilt.files) == len(original_names), (
-                        f'{arc_path}: file count mismatch'
-                    )
+                    assert len(rebuilt.files) == len(original_names), f'{arc_path}: file count mismatch'
                     for i, f in enumerate(rebuilt.files):
-                        assert f.file_name == original_names[i], (
-                            f'{arc_path}: name mismatch at {i}'
-                        )
-                        assert rebuilt.read(f) == original_data[f.file_name], (
-                            f'{arc_path}/{f.file_name}: content mismatch'
-                        )
+                        assert f.file_name == original_names[i], f'{arc_path}: name mismatch at {i}'
+                        assert (
+                            rebuilt.read(f) == original_data[f.file_name]
+                        ), f'{arc_path}/{f.file_name}: content mismatch'
