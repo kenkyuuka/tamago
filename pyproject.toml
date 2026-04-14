@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "tamago"
+name = "tamagoarc"
 dynamic = ["version"]
 description = "Multi-format game archive tool"
 requires-python = ">=3.10"

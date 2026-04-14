@@ -16,13 +16,13 @@ Requires Python 3.10 or later.
 ## Installation
 
 ```console
-pip install tamago
+pip install tamagoarc
 ```
 
 To enable TLG image conversion, install with the `images` extra:
 
 ```console
-pip install tamago[images]
+pip install tamagoarc[images]
 ```
 
 ## Usage
