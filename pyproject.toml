@@ -49,6 +49,9 @@ poringsoft = "tamago.formats.xp3.encryption.hash_derived:PoringSoftEncryption"
 cxcrypt = "tamago.formats.xp3.encryption.cxcrypt:CxEncryption"
 pinpoint = "tamago.formats.xp3.encryption.pinpoint:PinPointEncryption"
 
+[tool.hatch.build.targets.wheel]
+packages = ["src/tamago"]
+
 [tool.hatch.build.hooks.custom]
 
 [tool.hatch.version]
