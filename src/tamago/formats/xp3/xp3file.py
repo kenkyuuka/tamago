@@ -8,6 +8,7 @@ import zlib
 
 from construct import Container, Int64ul
 
+from . import simple_crypt
 from .models import (
     XP3_FLAG_ENCRYPTED,
     XP3_MAGIC,
@@ -293,7 +294,7 @@ class XP3File:
             return io.TextIOWrapper(buf, encoding=encoding or 'utf-8', errors=errors, newline=newline)
         return buf
 
-    def extract(self, member, path, convert_tlg=False):
+    def extract(self, member, path, convert_tlg=False, decode_text=True):
         if not isinstance(member, XP3Info):
             for f in self.files:
                 if f.file_name == member:
@@ -320,16 +321,22 @@ class XP3File:
             raise
 
         with self.open(member) as src, dst_fp as dst:
-            dst.write(src.read())
-            if dst.tell() != member.original_size:
-                logger.warning(f"Expected {member.original_size} uncompressed bytes, got {dst.tell()} for {member!r}")
+            data = src.read()
+            if len(data) != member.original_size:
+                logger.warning(f"Expected {member.original_size} uncompressed bytes, got {len(data)} for {member!r}")
+            if decode_text and len(data) >= 3 and data[:2] == b"\xfe\xfe" and data[2] in (0, 1, 2):
+                try:
+                    data = simple_crypt.decode(data)
+                except ValueError as e:
+                    logger.warning("simple_crypt decode failed for %r: %s", member.file_name, e)
+            dst.write(data)
         if hasattr(member, 'timestamp'):
             logger.warning("Member %r has timestamp %r", member, member.timestamp)
 
-    def extract_all(self, path, glob=None, convert_tlg=False):
+    def extract_all(self, path, glob=None, convert_tlg=False, decode_text=True):
         for f in self.files:
             if glob and not fnmatch.fnmatch(f.file_name, glob):
                 continue
             filepath = os.path.abspath(os.path.join(path, *f.file_name.split('/')))
             os.makedirs(os.path.dirname(filepath), exist_ok=True)
-            self.extract(f, filepath, convert_tlg=convert_tlg)
+            self.extract(f, filepath, convert_tlg=convert_tlg, decode_text=decode_text)

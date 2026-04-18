@@ -82,7 +82,7 @@ class TestNonfreeXP3Samples:
                 pytest.skip("no member with a filename short enough to extract")
             with tempfile.TemporaryDirectory() as tmpdir:
                 outpath = os.path.join(tmpdir, os.path.basename(member.file_name))
-                xp3.extract(member, outpath)
+                xp3.extract(member, outpath, decode_text=False)
                 size = os.path.getsize(outpath)
                 assert (
                     size == member.original_size
@@ -98,7 +98,7 @@ class TestNonfreeXP3Samples:
                 pytest.skip("no member with a filename short enough to extract")
             with tempfile.TemporaryDirectory() as tmpdir:
                 outpath = os.path.join(tmpdir, os.path.basename(member.file_name))
-                xp3.extract(member, outpath)
+                xp3.extract(member, outpath, decode_text=False)
                 size = os.path.getsize(outpath)
                 assert (
                     size == member.original_size
