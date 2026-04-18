@@ -352,3 +352,56 @@ class TestLongFilename:
                 # Long-named file was skipped
                 assert not os.path.exists(os.path.join(outdir, self.LONG_NAME))
                 assert any("Skipping" in r.message for r in caplog.records)
+
+
+@pytest.mark.integration
+class TestExtractSimpleCryptDecode:
+    """extract() transparently decodes simple-crypt text by default."""
+
+    ALICE = "Alice fell down the rabbit hole."
+    ALICE_UTF16 = b"\xff\xfe" + ALICE.encode("utf-16-le")
+
+    def _make_archive_with_simple_crypt(self, tmpdir):
+        from tamago.formats.xp3 import simple_crypt
+
+        encoded = simple_crypt.encode(self.ALICE_UTF16)
+        scrpath = os.path.join(tmpdir, "script.ks")
+        with open(scrpath, "wb") as f:
+            f.write(encoded)
+        xp3path = os.path.join(tmpdir, "scripts.xp3")
+        with XP3File(xp3path, "x") as xp3:
+            xp3.write(scrpath)
+        return xp3path, encoded
+
+    def test_decodes_by_default(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            xp3path, _ = self._make_archive_with_simple_crypt(tmpdir)
+            outdir = os.path.join(tmpdir, "out")
+            with XP3File(xp3path) as xp3:
+                xp3.extract_all(outdir)
+            with open(os.path.join(outdir, "script.ks"), "rb") as f:
+                assert f.read() == self.ALICE_UTF16
+
+    def test_no_decode_keeps_raw(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            xp3path, encoded = self._make_archive_with_simple_crypt(tmpdir)
+            outdir = os.path.join(tmpdir, "out")
+            with XP3File(xp3path) as xp3:
+                xp3.extract_all(outdir, decode_text=False)
+            with open(os.path.join(outdir, "script.ks"), "rb") as f:
+                assert f.read() == encoded
+
+    def test_binary_unchanged(self):
+        """Binaries that don't start with FE FE pass through even with decode_text=True."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            binpath = os.path.join(tmpdir, "image.bin")
+            with open(binpath, "wb") as f:
+                f.write(BINARY)
+            xp3path = os.path.join(tmpdir, "binary.xp3")
+            with XP3File(xp3path, "x") as xp3:
+                xp3.write(binpath)
+            outdir = os.path.join(tmpdir, "out")
+            with XP3File(xp3path) as xp3:
+                xp3.extract_all(outdir)
+            with open(os.path.join(outdir, "image.bin"), "rb") as f:
+                assert f.read() == BINARY

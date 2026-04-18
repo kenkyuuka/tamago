@@ -358,3 +358,13 @@ xp3_hashes = [
     "b10bb6bd29e990707c3263c336aea65eff0279a38cf9a56dc7cffb38914cd7aa", # data_voice_d.xp3
     "b702fd8dcb4598e2e166ecc316fa695c4c5648cda0599d13881b6fb621276631", # data_voice_n.xp3
 ]
+
+[games.68cb28dc]
+title = "部下俺×女上司／貸し出しプレイ＝？？？"
+publisher = "Atelier Sakura"
+xp3_hashes = [
+    "ecd3d85853e2938081a2c005202c2c92ed44cf73f67511443f28ad96f1220232", # data.xp3
+    "7b0f60e350b55ffad979f65115bd74967c9ee9c26de291de4f2abeb33cd6f83b", # scenario.xp3
+    "f0110c9b172e50d0d096fde34db49411bed7ca52d37d55e81edfa24728a6a2fb", # src.xp3
+    "abdaf79e59d3225317da97a1492b3cacdc7b0eaf01cd752d12bdca5214cb1c8b", # voice.xp3
+]

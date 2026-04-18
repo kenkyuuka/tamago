@@ -2,9 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Added
+
+- XP3: decode KiriKiri "simple crypt" text files on extract (`--no-decode-text` to opt out).
+
 ## 1.0.1 — 2026-04-17
 
-Packaging fix.
+### Fixed
+
+- Packaging fix.
 
 ## 1.0.0 — 2026-04-14
 

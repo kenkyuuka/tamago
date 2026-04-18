@@ -45,6 +45,12 @@ class XP3Handler:
             action='store_true',
             help='convert TLG images to PNG during extraction (requires Pillow)',
         )
+        parser.add_argument(
+            '--no-decode-text',
+            dest='decode_text',
+            action='store_false',
+            help='keep simple-crypt obfuscation on extracted text files (FE FE 01 ...)',
+        )
 
     def add_create_args(self, parser):
         parser.add_argument('--encryption', metavar='SCHEME', help='encryption scheme name (e.g. hash-xor)')
@@ -59,7 +65,12 @@ class XP3Handler:
         if encryption is None and not getattr(args, 'no_auto_detect', False):
             encryption = auto_detect(args.input, force_probe=getattr(args, 'force_detect', False))
         f = XP3File(args.input, encryption=encryption, force_encrypt=getattr(args, 'force_encrypt', False))
-        f.extract_all(args.output, glob=getattr(args, 'glob', None), convert_tlg=getattr(args, 'convert_tlg', False))
+        f.extract_all(
+            args.output,
+            glob=getattr(args, 'glob', None),
+            convert_tlg=getattr(args, 'convert_tlg', False),
+            decode_text=getattr(args, 'decode_text', True),
+        )
 
     def cmd_create(self, args):
         try:
