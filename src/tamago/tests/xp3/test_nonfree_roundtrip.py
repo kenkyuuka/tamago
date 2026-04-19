@@ -78,8 +78,10 @@ def test_xp3_member_content_roundtrip(relpath):
         if not os.path.isdir(ext1) or not any(os.scandir(ext1)):
             pytest.skip(f"{relpath}: no extractable members")
 
-        # ext1 -> rebuilt.xp3 (unencrypted; roundtrip concerns member content, not crypto)
-        with XP3File(rebuilt, mode='x') as xp3:
+        # ext1 -> rebuilt.xp3 (unencrypted; roundtrip concerns member content, not crypto).
+        # compresslevel=0 keeps the zlib-wrapped "store" path exercised but skips the
+        # expensive deflate step — the test checks content fidelity, not compressed size.
+        with XP3File(rebuilt, mode='x', compresslevel=0) as xp3:
             for rel, full in _walk_extracted(ext1):
                 xp3.write(full, arcname=rel)
 

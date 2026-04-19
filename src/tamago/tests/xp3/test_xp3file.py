@@ -173,7 +173,7 @@ class TestRoundTrip:
                 f.write(BINARY)
 
             xp3path = os.path.join(tmpdir, 'round_trip.xp3')
-            with XP3File(xp3path, 'x', encryption=encryption) as xp3:
+            with XP3File(xp3path, 'x', encryption=encryption, compresslevel=0) as xp3:
                 xp3.write(srcfile)
 
             with XP3File(xp3path, encryption=encryption) as xp3:
@@ -197,7 +197,7 @@ class TestFalseEncryptedFlag:
 
             xp3path = os.path.join(tmpdir, 'data.xp3')
             # Write without encryption (data is not encrypted)
-            with XP3File(xp3path, 'x') as xp3:
+            with XP3File(xp3path, 'x', compresslevel=0) as xp3:
                 xp3.write(srcfile)
                 # Manually set the encrypted flag (simulates a broken flag)
                 xp3.files[0].flags |= XP3_FLAG_ENCRYPTED
@@ -237,7 +237,7 @@ class TestUncompressedFileTable:
 
             # Create a normal (compressed file table) archive first
             xp3path = os.path.join(tmpdir, 'test.xp3')
-            with XP3File(xp3path, 'x') as xp3:
+            with XP3File(xp3path, 'x', compresslevel=0) as xp3:
                 xp3.write(srcfile)
 
             # Read it, find the file table, and rewrite with uncompressed table
@@ -295,7 +295,7 @@ class TestLongFilename:
             f.write(b"Down the rabbit hole.")
 
         xp3path = os.path.join(tmpdir, "long_name.xp3")
-        with XP3File(xp3path, "x") as xp3:
+        with XP3File(xp3path, "x", compresslevel=0) as xp3:
             xp3.write(srcfile)
         return xp3path
 
@@ -329,7 +329,7 @@ class TestLongFilename:
                 f.write(b"Off with her head!")
 
             xp3path = os.path.join(tmpdir, "multi_long.xp3")
-            with XP3File(xp3path, "x") as xp3:
+            with XP3File(xp3path, "x", compresslevel=0) as xp3:
                 xp3.write(src_normal)
                 xp3.write(src_long)
 
@@ -369,7 +369,7 @@ class TestExtractSimpleCryptDecode:
         with open(scrpath, "wb") as f:
             f.write(encoded)
         xp3path = os.path.join(tmpdir, "scripts.xp3")
-        with XP3File(xp3path, "x") as xp3:
+        with XP3File(xp3path, "x", compresslevel=0) as xp3:
             xp3.write(scrpath)
         return xp3path, encoded
 
@@ -398,7 +398,7 @@ class TestExtractSimpleCryptDecode:
             with open(binpath, "wb") as f:
                 f.write(BINARY)
             xp3path = os.path.join(tmpdir, "binary.xp3")
-            with XP3File(xp3path, "x") as xp3:
+            with XP3File(xp3path, "x", compresslevel=0) as xp3:
                 xp3.write(binpath)
             outdir = os.path.join(tmpdir, "out")
             with XP3File(xp3path) as xp3:

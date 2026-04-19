@@ -36,13 +36,14 @@ class XP3File:
 
     fp = None
 
-    def __init__(self, file, mode="r", compressed=True, encryption=None, force_encrypt=False):
+    def __init__(self, file, mode="r", compressed=True, encryption=None, force_encrypt=False, compresslevel=-1):
         """Open the XP3 file with mode read 'r' or exclusive create 'x'."""
         if mode not in ('r', 'x'):
             raise ValueError("XP3File requires mode 'r' or 'x'")
 
         self.mode = mode + 'b'
         self.compressed = compressed
+        self.compresslevel = compresslevel
         self.encryption = encryption
         self.force_encrypt = force_encrypt
         self.files = []
@@ -108,7 +109,7 @@ class XP3File:
         data = b"".join(f.get_info_bytes() for f in self.files)
         uncompressed_size = len(data)
         if self.compressed:
-            data = zlib.compress(data)
+            data = zlib.compress(data, self.compresslevel)
         self.fp.write(
             XP3IndexHeader.build(
                 {
@@ -122,7 +123,7 @@ class XP3File:
         self.fp.seek(0x20, 0)
         self.fp.write(Int64ul.build(info_start))
 
-    def write(self, filepath, arcname=None, compressed=True):
+    def write(self, filepath, arcname=None, compressed=True, compresslevel=None):
         if isinstance(filepath, os.PathLike):
             filepath = os.fspath(filepath)
         if isinstance(filepath, str):
@@ -148,7 +149,7 @@ class XP3File:
         # Compress
         if compressed:
             segment.flags |= 1
-            raw = zlib.compress(raw)
+            raw = zlib.compress(raw, self.compresslevel if compresslevel is None else compresslevel)
 
         # Encrypt (after compression)
         if self.encryption:
