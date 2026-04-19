@@ -24,15 +24,15 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
-dependencies = ["construct>=2.10"]
+dependencies = [
+  "construct>=2.10",
+  "Pillow>=9.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/kenkyuuka/tamago"
 Issues = "https://github.com/kenkyuuka/tamago/issues"
 Source = "https://github.com/kenkyuuka/tamago"
-
-[project.optional-dependencies]
-images = ["Pillow>=9.0"]
 
 [project.scripts]
 tamago = "tamago.cli:main"
@@ -42,6 +42,7 @@ xp3 = "tamago.formats.xp3.handler:XP3Handler"
 det = "tamago.formats.det.handler:DETHandler"
 gsp = "tamago.formats.gsp.handler:GSPHandler"
 advhd = "tamago.formats.advhd.handler:ARCHandler"
+livemaker = "tamago.formats.livemaker.handler:LiveMakerHandler"
 
 [project.entry-points."tamago.formats.xp3.encryption"]
 fixed-xor = "tamago.formats.xp3.encryption.fixed_xor:FixedXorEncryption"
@@ -74,6 +75,7 @@ test-xp3 = "pytest -n auto --maxprocesses 8 src/tamago/tests/xp3 {args}"
 test-det = "pytest -n auto --maxprocesses 8 src/tamago/tests/det {args}"
 test-gsp = "pytest -n auto --maxprocesses 8 src/tamago/tests/gsp {args}"
 test-advhd = "pytest -n auto --maxprocesses 8 src/tamago/tests/advhd {args}"
+test-livemaker = "pytest -n auto --maxprocesses 8 src/tamago/tests/livemaker {args}"
 test-tamago = "pytest -n auto --maxprocesses 8 src/tamago/tests/test_cli.py {args}"
 test-nonfree = "pytest -n auto --maxprocesses 8 src/tamago/tests -m nonfree {args}"
 test-cov = "coverage run -m pytest -n auto --maxprocesses 8 src/tamago/tests {args}"
@@ -99,6 +101,7 @@ python = ["3.10", "3.11", "3.12", "3.13", "3.14"]
 dependencies = [
   "black>=23.1.0",
   "mypy>=1.0.0",
+  "Pillow>=9.0",
   "pytest",
   "ruff>=0.0.243",
 ]

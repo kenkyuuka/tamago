@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- LiveMaker VF archive support (embedded, standalone, and multi-part configurations).
+- LiveMaker: convert Gale images (classic and GaleX200) to PNG on extract (`--no-convert-gal` to opt out).
 - XP3: decode KiriKiri "simple crypt" text files on extract (`--no-decode-text` to opt out).
 
 ### Changed
