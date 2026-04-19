@@ -12,19 +12,24 @@ import ctypes
 
 
 class TpRandom:
-    """PRNG used for filename encryption and offset XORing.
+    """PRNG used for filename encryption, offset XORing, and Gale shuffling.
 
-    The state recurrence is ``state = (state * 5 + 0x75D6EE39) mod 2**32``,
-    initialized to 0.  The low byte of each output is used as the key byte
-    for filename decryption; offsets XOR with the full 32-bit output,
-    sign-extended to 64 bits.
+    The state recurrence is ``state = (state * 5 + seed) mod 2**32``, with
+    ``state`` initialized to 0.  VF archives use the fixed seed
+    ``0x75D6EE39`` for filename and offset obfuscation; Gale image shuffling
+    uses a per-game 32-bit key as the seed.
+
+    The low byte of each output is used as the key byte for filename
+    decryption; offsets XOR with the full 32-bit output, sign-extended to
+    64 bits; Gale takes ``output % remaining`` to build a permutation.
     """
 
-    __slots__ = ('state',)
+    __slots__ = ('state', 'seed')
 
-    CONSTANT = 0x75D6EE39
+    DEFAULT_SEED = 0x75D6EE39
 
-    def __init__(self):
+    def __init__(self, seed: int = DEFAULT_SEED):
+        self.seed = seed & 0xFFFFFFFF
         self.state = 0
 
     def reset(self) -> None:
@@ -33,7 +38,7 @@ class TpRandom:
 
     def next_uint32(self) -> int:
         """Advance the state and return the new 32-bit output."""
-        self.state = ((self.state << 2) + self.state + self.CONSTANT) & 0xFFFFFFFF
+        self.state = ((self.state << 2) + self.state + self.seed) & 0xFFFFFFFF
         return self.state
 
     def next_sign_extended(self) -> int:

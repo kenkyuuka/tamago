@@ -24,15 +24,15 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
-dependencies = ["construct>=2.10"]
+dependencies = [
+  "construct>=2.10",
+  "Pillow>=9.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/kenkyuuka/tamago"
 Issues = "https://github.com/kenkyuuka/tamago/issues"
 Source = "https://github.com/kenkyuuka/tamago"
-
-[project.optional-dependencies]
-images = ["Pillow>=9.0"]
 
 [project.scripts]
 tamago = "tamago.cli:main"
@@ -101,6 +101,7 @@ python = ["3.10", "3.11", "3.12", "3.13", "3.14"]
 dependencies = [
   "black>=23.1.0",
   "mypy>=1.0.0",
+  "Pillow>=9.0",
   "pytest",
   "ruff>=0.0.243",
 ]

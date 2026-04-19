@@ -80,9 +80,7 @@ class TestNonfreeLiveMakerSamples:
         with orig:
             original_names = [f.file_name for f in orig.files]
             original_data = {f.file_name: orig.read(f) for f in orig.files}
-            original_meta = {
-                f.file_name: (f.compressed, f.scrambled, f.timestamp) for f in orig.files
-            }
+            original_meta = {f.file_name: (f.compressed, f.scrambled, f.timestamp) for f in orig.files}
 
         with tempfile.TemporaryDirectory() as tmp_str:
             tmp = pathlib.Path(tmp_str)

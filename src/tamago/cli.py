@@ -1,5 +1,6 @@
 import argparse
 import importlib.metadata
+import logging
 import pathlib
 import sys
 
@@ -92,6 +93,11 @@ def cmd_create(args, handler_instances):
 
 
 def main():
+    # Show warnings and errors from format handlers on stderr; the library
+    # itself never configures a handler, so without this the CLI would drop
+    # messages like "falling back to raw .gal" silently.
+    logging.basicConfig(level=logging.WARNING, format='%(levelname)s: %(message)s')
+
     # Discover and instantiate format handlers.
     handler_entries = get_format_handlers()
     handler_instances = {}

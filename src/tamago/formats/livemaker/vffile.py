@@ -19,6 +19,7 @@ import binascii
 import contextlib
 import datetime
 import fnmatch
+import io
 import logging
 import os
 import pathlib
@@ -209,6 +210,10 @@ class VFFile:
         self._data_fps: list[tuple[int, int, typing.BinaryIO, int]] = []
         self._owned_fps: list[typing.BinaryIO] = []
         self._pending: list[dict] = []
+        # Track distinct Gale-fallback reasons already logged, so an archive
+        # with thousands of .gal files doesn't produce thousands of identical
+        # warnings.
+        self._gal_fallback_warned: set[str] = set()
 
         if mode == 'r':
             try:
@@ -414,18 +419,60 @@ class VFFile:
             data = zlib.decompress(data)
         return data
 
-    def extract(self, member: 'VFInfo | str', path: str | os.PathLike):
-        """Extract *member* to a file at *path*."""
-        data = self.read(member)
-        with open(path, 'xb') as f:
-            f.write(data)
+    def extract(
+        self,
+        member: 'VFInfo | str',
+        path: str | os.PathLike,
+        convert_gal: bool = False,
+    ):
+        """Extract *member* to a file at *path*.
 
-    def extract_all(self, path: str | os.PathLike, glob: str | None = None):
+        When ``convert_gal`` is true and the member is a Gale image, the
+        decoded bitmap is saved as PNG (with the output path's extension
+        replaced).  If Pillow is unavailable or decoding fails, the file
+        is written as the raw ``.gal`` bytes instead.
+        """
+        if not isinstance(member, VFInfo):
+            for f in self.files:
+                if f.file_name == member:
+                    member = f
+                    break
+            else:
+                raise KeyError(f"No member named {member!r}")
+
+        if convert_gal and member.file_name.lower().endswith('.gal'):
+            from tamago.formats.livemaker import gale
+
+            try:
+                img = gale.open_gal(io.BytesIO(self.read(member)))
+            except (ImportError, NotImplementedError, ValueError) as exc:
+                reason = f"{type(exc).__name__}: {exc}"
+                if reason not in self._gal_fallback_warned:
+                    self._gal_fallback_warned.add(reason)
+                    logger.warning("Cannot convert Gale images; keeping .gal files (%s)", reason)
+            else:
+                png_path = os.fspath(path)
+                png_path = os.path.splitext(png_path)[0] + '.png'
+                img.save(png_path, 'PNG')
+                return
+
+        data = self.read(member)
+        with open(path, 'xb') as fp:
+            fp.write(data)
+
+    def extract_all(
+        self,
+        path: str | os.PathLike,
+        glob: str | None = None,
+        convert_gal: bool = False,
+    ):
         """Extract all members to directory *path*.
 
         LiveMaker archive names use backslash separators; these are
         converted to the platform's native separator on disk.  If *glob*
         is given, only entries whose names match the pattern are extracted.
+        When ``convert_gal`` is true, ``.gal`` images are converted to PNG
+        on the way out.
         """
         for f in self.files:
             if glob and not fnmatch.fnmatch(f.file_name, glob):
@@ -433,7 +480,7 @@ class VFFile:
             parts = f.file_name.replace('\\', '/').split('/')
             filepath = os.path.abspath(os.path.join(path, *parts))
             os.makedirs(os.path.dirname(filepath), exist_ok=True)
-            self.extract(f, filepath)
+            self.extract(f, filepath, convert_gal=convert_gal)
 
     # -- writing -----------------------------------------------------------
 

@@ -938,7 +938,7 @@ def open_tlg(image: str | Path | io.BufferedIOBase) -> Image.Image:
         ImportError: If Pillow is not installed.
     """
     if Image is None:
-        raise ImportError("Pillow is required for TLG image conversion. " "Install it with: pip install tamago[images]")
+        raise ImportError("Pillow is required for TLG image conversion. Install it with: pip install Pillow")
 
     if isinstance(image, (str, os.PathLike)):
         with open(image, 'rb') as f:
