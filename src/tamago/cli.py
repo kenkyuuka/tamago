@@ -3,11 +3,13 @@ import importlib.metadata
 import pathlib
 import sys
 
+from tamago.formats.livemaker.vffile import VF_MAGIC as LIVEMAKER_MAGIC
 from tamago.formats.xp3.models import XP3_MAGIC
 
 # Magic bytes used to identify archive formats.
 FORMAT_MAGIC = {
     'xp3': XP3_MAGIC,
+    'livemaker': LIVEMAKER_MAGIC,
 }
 
 # Formats detected by file extension (no magic bytes).
@@ -37,11 +39,20 @@ def detect_format(path):
     try:
         with open(path, 'rb') as f:
             header = f.read(16)
+            # LiveMaker exe-embedded archives have a 'lv' trailer at EOF.
+            f.seek(0, 2)
+            size = f.tell()
+            trailer = b''
+            if size >= 6:
+                f.seek(size - 6)
+                trailer = f.read(6)
     except OSError:
         return None
     for name, magic in FORMAT_MAGIC.items():
         if header[: len(magic)] == magic:
             return name
+    if trailer.endswith(b'lv') and header[:2] == b'MZ':
+        return 'livemaker'
     return _detect_by_extension(path)
 
 

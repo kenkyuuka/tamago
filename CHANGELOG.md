@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- LiveMaker VF archive support (embedded, standalone, and multi-part configurations).
 - XP3: decode KiriKiri "simple crypt" text files on extract (`--no-decode-text` to opt out).
 
 ### Changed
