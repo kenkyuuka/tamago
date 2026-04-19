@@ -28,7 +28,7 @@ SAMPLES = os.path.join(os.path.dirname(__file__), 'samples')
 def _make_xp3_with_files(tmpdir, filename, file_contents, encryption=None):
     """Helper: create an XP3 archive from a dict of {arcname: bytes}."""
     xp3_path = os.path.join(tmpdir, filename)
-    with XP3File(xp3_path, 'x', encryption=encryption) as xp3:
+    with XP3File(xp3_path, 'x', encryption=encryption, compresslevel=0) as xp3:
         for arcname, data in file_contents.items():
             filepath = os.path.join(tmpdir, arcname)
             with open(filepath, 'wb') as f:

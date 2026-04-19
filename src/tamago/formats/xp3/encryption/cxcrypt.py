@@ -515,7 +515,8 @@ class CxEncryption(XP3Encryption):
         if key3 == 0:
             key3 = 1
 
-        result = bytearray(buf)
+        # Bulk XOR with key3 (point XORs at pos1/pos2 commute with it)
+        result = bytearray(buf.translate(bytes(i ^ key3 for i in range(256))))
 
         # Point XOR at specific offsets
         pos2 = key2 - file_offset
@@ -525,10 +526,6 @@ class CxEncryption(XP3Encryption):
         pos1 = key1 - file_offset
         if 0 <= pos1 < len(result):
             result[pos1] ^= (ret1 >> 8) & 0xFF
-
-        # Bulk XOR with key3
-        for i in range(len(result)):
-            result[i] ^= key3
 
         return bytes(result)
 

@@ -139,7 +139,7 @@ class TestDetectByTpm:
             txt = os.path.join(tmpdir, 'test.txt')
             with open(txt, 'wb') as f:
                 f.write(b'test')
-            with XP3File(xp3_path, 'x') as xp3:
+            with XP3File(xp3_path, 'x', compresslevel=0) as xp3:
                 xp3.write(txt)
 
             fake_lib = {
@@ -218,7 +218,7 @@ class TestDetectByProbe:
             # Build archive with a mix: encrypted text + unencrypted PNG
             xp3_path = os.path.join(tmpdir, 'data.xp3')
             enc = HashXorEncryption(shift=3)
-            with XP3File(xp3_path, 'x', encryption=enc) as xp3:
+            with XP3File(xp3_path, 'x', encryption=enc, compresslevel=0) as xp3:
                 xp3.write(txt_path)  # encrypted, flags=ENCRYPTED
                 # Temporarily disable encryption for the PNG
                 xp3.encryption = None
@@ -272,7 +272,7 @@ class TestDetectByProbe:
 
             xp3_path = os.path.join(tmpdir, 'data.xp3')
             enc = HashXorEncryption(shift=3)
-            with XP3File(xp3_path, 'x', encryption=enc) as xp3:
+            with XP3File(xp3_path, 'x', encryption=enc, compresslevel=0) as xp3:
                 xp3.write(enc_png)  # encrypted PNG, flags=ENCRYPTED
                 xp3.encryption = None
                 xp3.write(plain_png)  # unencrypted PNG, flags=0

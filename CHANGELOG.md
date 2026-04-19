@@ -8,6 +8,11 @@ All notable changes to this project will be documented in this file.
 
 - XP3: decode KiriKiri "simple crypt" text files on extract (`--no-decode-text` to opt out).
 
+### Changed
+
+- XP3: `XP3File` accepts `compresslevel` to control zlib compression on write.
+- Tests: nonfree suite ~85% faster, full suite ~72% faster.
+
 ## 1.0.1 — 2026-04-17
 
 ### Fixed
