@@ -146,14 +146,14 @@ class XP3File:
         raw = fp.read()
         xi.key = zlib.adler32(raw)
 
+        # Encrypt before compressing: the engine decrypts inflated data.
+        if self.encryption:
+            raw = self.encryption.encrypt(raw, xi, segment)
+
         # Compress
         if compressed:
             segment.flags |= 1
             raw = zlib.compress(raw, self.compresslevel if compresslevel is None else compresslevel)
-
-        # Encrypt (after compression)
-        if self.encryption:
-            raw = self.encryption.encrypt(raw, xi, segment)
 
         self.fp.seek(0, 2)
         segment.offset = self.fp.tell()
@@ -270,24 +270,11 @@ class XP3File:
         for s in member.segments:
             self.fp.seek(s.offset, 0)
             data = self.fp.read(s.compressed_size)
-            if self.encryption and (member.encrypted or self.force_encrypt):
-                decrypted = self.encryption.decrypt(data, member, s)
-                if s.compressed:
-                    try:
-                        data = zlib.decompress(decrypted)
-                    except zlib.error:
-                        # Decryption produced invalid data; the file may not
-                        # actually be encrypted despite the flag.  Fall back
-                        # to raw decompression.
-                        logger.debug(
-                            "%s: decryption+decompression failed, retrying without decryption",
-                            member.file_name,
-                        )
-                        data = zlib.decompress(data)
-                else:
-                    data = decrypted
-            elif s.compressed:
+            if s.compressed:
                 data = zlib.decompress(data)
+            # Decrypt after inflating, as the engine's extraction filter does.
+            if self.encryption and (member.encrypted or self.force_encrypt):
+                data = self.encryption.decrypt(data, member, s)
             buf.write(data)
         buf.seek(0)
 

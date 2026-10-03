@@ -272,12 +272,11 @@ def read_file_list(xp3_path):
 
 
 def try_decrypt_segment(encryption, data, info, segment):
-    """Try to decrypt (and decompress) a segment, returning bytes or None."""
+    """Try to decompress and decrypt a segment, returning bytes or None."""
     try:
-        result = encryption.decrypt(data, info, segment)
         if segment.compressed:
-            result = zlib.decompress(result)
-        return result
+            data = zlib.decompress(data)
+        return encryption.decrypt(data, info, segment)
     except Exception:
         return None
 

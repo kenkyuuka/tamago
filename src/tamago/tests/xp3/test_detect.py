@@ -1,6 +1,7 @@
 import hashlib
 import os
 import tempfile
+import zlib
 
 import pytest
 from construct import Container
@@ -102,6 +103,16 @@ class TestTryDecryptSegment:
 
         result = try_decrypt_segment(enc, b'not zlib', info, seg)
         assert result is None
+
+    def test_compressed_decrypts_after_inflate(self):
+        """KiriKiri stores plain zlib whose inflated bytes are encrypted."""
+        enc = HashXorEncryption(shift=3)
+        info = XP3Info(file_name='test', key=0xDEADBEEF)
+        plaintext = b'Curiouser and curiouser!'
+        seg = Container(flags=1, compressed=True, offset=0, original_size=len(plaintext), compressed_size=0)
+
+        stored = zlib.compress(enc.encrypt(plaintext, info, seg))
+        assert try_decrypt_segment(enc, stored, info, seg) == plaintext
 
 
 @pytest.mark.unit

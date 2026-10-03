@@ -295,18 +295,13 @@ def verify_candidate(candidate, xp3_files, max_files_per_xp3=5):
             if not ok:
                 # The file might be genuinely unencrypted (some games mix encrypted
                 # and unencrypted files, and some set the flag incorrectly).  If the
-                # raw data decompresses cleanly without decryption, the file is not
+                # data already carries its magic without decryption, the file is not
                 # encrypted — skip it rather than counting it as a failure.
                 try:
-                    if segment.compressed:
-                        zlib.decompress(raw_data)
-                    elif _check_magic(raw_data, ext, expected_magic):
-                        pass
-                    else:
-                        raise ValueError("not plaintext")
-                except Exception:
-                    pass  # truly failed — fall through to count as failure
-                else:
+                    plain = zlib.decompress(raw_data) if segment.compressed else raw_data
+                except zlib.error:
+                    plain = None
+                if _check_magic(plain, ext, expected_magic):
                     continue  # unencrypted file — skip
 
             detail = {

@@ -5,6 +5,7 @@ import tempfile
 import zlib
 
 import pytest
+from construct import Container
 
 from tamago.formats.xp3 import XP3File
 from tamago.formats.xp3.encryption import HashXorEncryption
@@ -182,31 +183,51 @@ class TestRoundTrip:
 
 
 @pytest.mark.integration
-class TestFalseEncryptedFlag:
-    """Files flagged as encrypted but not actually encrypted should extract correctly."""
+class TestCompressionOrder:
+    """KiriKiri decrypts after inflating, so compressed segments hold plain zlib of encrypted bytes."""
 
-    def test_compressed_fallback(self):
-        """Decryption of a not-actually-encrypted file should fall back to raw decompression."""
-        from tamago.formats.xp3.models import XP3_FLAG_ENCRYPTED
+    CONTENT = b'Alice was beginning to get very tired of sitting by her sister on the bank'
 
-        content = b'Alice was beginning to get very tired of sitting by her sister on the bank'
+    def test_read_inflates_then_decrypts(self):
+        from tamago.formats.xp3.models import XP3_FLAG_ENCRYPTED, XP3Info
+
+        key = zlib.adler32(self.CONTENT)
+        seg = Container(flags=1, offset=0, original_size=len(self.CONTENT), compressed_size=0)
+        encrypted = ENC.encrypt(self.CONTENT, XP3Info(file_name='alice.txt', key=key), seg)
+
         with tempfile.TemporaryDirectory() as tmpdir:
             srcfile = os.path.join(tmpdir, 'alice.txt')
             with open(srcfile, 'wb') as f:
-                f.write(content)
+                f.write(encrypted)
+
+            # Store zlib(encrypted) unencrypted, then mark it as an encrypted
+            # file whose hash is that of the plaintext.
+            xp3path = os.path.join(tmpdir, 'data.xp3')
+            with XP3File(xp3path, 'x') as xp3:
+                xp3.write(srcfile)
+                xp3.files[0].flags |= XP3_FLAG_ENCRYPTED
+                xp3.files[0].key = key
+
+            with XP3File(xp3path, encryption=ENC) as xp3:
+                assert _extract_member(xp3, xp3.files[0]) == self.CONTENT
+
+    def test_write_compresses_encrypted_data(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            srcfile = os.path.join(tmpdir, 'alice.txt')
+            with open(srcfile, 'wb') as f:
+                f.write(self.CONTENT)
 
             xp3path = os.path.join(tmpdir, 'data.xp3')
-            # Write without encryption (data is not encrypted)
-            with XP3File(xp3path, 'x', compresslevel=0) as xp3:
+            with XP3File(xp3path, 'x', encryption=ENC) as xp3:
                 xp3.write(srcfile)
-                # Manually set the encrypted flag (simulates a broken flag)
-                xp3.files[0].flags |= XP3_FLAG_ENCRYPTED
 
-            # Open with encryption; the file is flagged encrypted but data isn't.
-            # Decryption should fail silently and fall back to raw decompression.
             with XP3File(xp3path, encryption=ENC) as xp3:
-                assert xp3.files[0].encrypted is True
-                assert _extract_member(xp3, xp3.files[0]) == content
+                member = xp3.files[0]
+                seg = member.segments[0]
+                xp3.fp.seek(seg.offset)
+                stored = xp3.fp.read(seg.compressed_size)
+                assert zlib.decompress(stored) == ENC.encrypt(self.CONTENT, member, seg)
+                assert _extract_member(xp3, member) == self.CONTENT
 
 
 @pytest.mark.unit

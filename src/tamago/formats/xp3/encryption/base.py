@@ -9,7 +9,7 @@ class XP3Encryption(abc.ABC):
         """Decrypt a segment's data.
 
         Args:
-            data: Raw bytes read from the archive segment.
+            data: The segment's bytes, already inflated if the segment is compressed.
             info: Container with file metadata (flags, key, file_name, etc.).
             segment: Container with segment metadata (flags, offset, sizes).
 
@@ -23,7 +23,7 @@ class XP3Encryption(abc.ABC):
         """Encrypt a segment's data.
 
         Args:
-            data: Plain bytes to be written to the archive segment.
+            data: Plain bytes for the segment, before any compression.
             info: Container with file metadata (flags, key, file_name, etc.).
             segment: Container with segment metadata (flags, offset, sizes).
 
