@@ -21,12 +21,24 @@ class TestGetFormatHandlers:
 
         assert cls is XP3Handler
 
+    def test_xfl_entry_point_loads(self):
+        handlers = get_format_handlers()
+        cls = handlers['xfl'].load()
+        from tamago.formats.xfl.handler import XFLHandler
+
+        assert cls is XFLHandler
+
 
 @pytest.mark.unit
 class TestDetectFormat:
     def test_detects_xp3(self):
         path = SAMPLES_DIR / "single_uncompressed.xp3"
         assert detect_format(path) == 'xp3'
+
+    def test_detects_xfl(self, tmp_path):
+        p = tmp_path / "wonderland.dat"
+        p.write_bytes(b'LB\x01\x00' + bytes(8))
+        assert detect_format(p) == 'xfl'
 
     def test_returns_none_for_unknown(self, tmp_path):
         p = tmp_path / "fake.dat"

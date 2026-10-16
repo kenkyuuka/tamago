@@ -5,12 +5,14 @@ import pathlib
 import sys
 
 from tamago.formats.livemaker.vffile import VF_MAGIC as LIVEMAKER_MAGIC
+from tamago.formats.xfl.xflfile import XFL_MAGIC
 from tamago.formats.xp3.models import XP3_MAGIC
 
 # Magic bytes used to identify archive formats.
 FORMAT_MAGIC = {
     'xp3': XP3_MAGIC,
     'livemaker': LIVEMAKER_MAGIC,
+    'xfl': XFL_MAGIC,
 }
 
 # Formats detected by file extension (no magic bytes).

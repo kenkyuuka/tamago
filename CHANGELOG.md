@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Added
+
+- Liar-soft / RScript XFL archive support (#8). Nested archives are extracted as directories, and created archives are sorted in the order the engine's lookup requires.
+
 ## 1.1.0 — 2026-04-19
 
 ### Added

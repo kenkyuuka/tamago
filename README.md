@@ -12,6 +12,7 @@ Requires Python 3.10 or later.
 | DET    | [μ-GameOperationSystem](https://github.com/kenkyuuka/research-vault/blob/main/engines/%CE%BC-GameOperationSystem.md) | yes | yes |
 | GSP    | [AGSD](https://github.com/kenkyuuka/research-vault/blob/main/engines/AGSD.md) | yes | yes |
 | ARC    | AdvHD (WillPlus V2) | yes | yes |
+| XFL    | Liar-soft RScript | yes | yes |
 
 ## Installation
 
