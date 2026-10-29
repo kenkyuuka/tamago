@@ -471,9 +471,7 @@ class DETFile:
         added.  *prefix* is prepended to archive names (with a backslash
         separator).
         """
-        if isinstance(path, str):
-            path = pathlib.Path(path)
-
+        path = pathlib.Path(path)
         for entry in sorted(path.iterdir()):
             if entry.is_dir():
                 sub_prefix = prefix + entry.name + '\\'
