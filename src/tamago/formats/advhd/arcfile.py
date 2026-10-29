@@ -249,9 +249,7 @@ class ARCFile:
         if self.mode != 'w':
             raise ValueError("write() requires mode='w'")
 
-        if isinstance(filepath, os.PathLike):
-            filepath = os.fspath(filepath)
-
+        filepath = os.fspath(filepath)
         if arcname is None:
             arcname = os.path.basename(filepath)
 
@@ -259,9 +257,7 @@ class ARCFile:
 
     def write_all(self, path: str | os.PathLike, glob: str | None = None, prefix: str = '', encrypt: bool = True):
         """Recursively add files from directory *path* to the archive."""
-        if isinstance(path, str):
-            path = pathlib.Path(path)
-
+        path = pathlib.Path(path)
         for entry in sorted(path.iterdir()):
             if entry.is_dir():
                 sub_prefix = prefix + entry.name + '/'

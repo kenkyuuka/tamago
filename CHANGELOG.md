@@ -2,10 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
-## Unreleased
+## 1.1.1 — 2026-10-29
 
 ### Fixed
 
+- XP3: decrypt segments after inflating them, and encrypt before compressing, as the engine does. Previously, compressed files that were also encrypted came out garbled, and archives tamago created with encryption could not be read by the game.
 - XP3: decrypt archives whose file table leaves every per-file encrypted flag clear, as the engine does. Previously these extracted without error but with garbled contents (affects HashCrypt games from Ammolite, Apadash, Appetite and others).
 
 ## 1.1.0 — 2026-04-19

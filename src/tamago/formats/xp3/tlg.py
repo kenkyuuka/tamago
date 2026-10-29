@@ -25,7 +25,7 @@ except ImportError:
     Image = None  # type: ignore[assignment,misc]
 
 try:
-    from tamago.formats.xp3 import _tlg_accel
+    from tamago.formats.xp3 import _tlg_accel  # type: ignore[attr-defined]
 except ImportError:
     _tlg_accel = None  # type: ignore[assignment]
 
@@ -324,14 +324,14 @@ _BLOCK_WIDTH = 8
 _BLOCK_HEIGHT = 8
 
 # Lazily initialized lookup tables (module-level singletons).
-_unary_table: list[int] | None = None
-_golomb_length_table: list[list[int]] | None = None
+_unary_table: list[int] = []
+_golomb_length_table: list[list[int]] = []
 
 
 def _ensure_tables():
     """Build the Golomb lookup tables on first use."""
     global _unary_table, _golomb_length_table
-    if _unary_table is not None:
+    if _unary_table:
         return
 
     # --- Unary code table ---

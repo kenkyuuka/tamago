@@ -103,7 +103,7 @@ dependencies = [
   "mypy>=1.0.0",
   "Pillow>=9.0",
   "pytest",
-  "ruff>=0.0.243",
+  "ruff>=0.17,<0.18",
 ]
 [tool.hatch.envs.lint.scripts]
 typing = "mypy --install-types --non-interactive {args:src/tamago}"
@@ -166,7 +166,7 @@ ignore = [
   # Ignore checks for possible passwords
   "S105", "S106", "S107",
   # Ignore complexity
-  "C901", "PLR0911", "PLR0912", "PLR0913", "PLR0915",
+  "C901", "PLR0911", "PLR0912", "PLR0913", "PLR0915", "PLR0917",
   # Quote style managed by black (skip-string-normalization = true)
   "Q000",
   # Allow string/f-string literals in exceptions
@@ -185,6 +185,8 @@ ignore = [
   "PLR2004",
   # Allow global statement for lazy-init patterns
   "PLW0603",
+  # Keep plain `import datetime` (code uses `dt` as a variable name)
+  "ICN001",
 ]
 unfixable = [
   # Don't touch unused imports
@@ -204,6 +206,10 @@ ban-relative-imports = "all"
 "hatch_build.py" = ["ARG002", "S603", "S607"]
 
 [tool.mypy]
+[[tool.mypy.overrides]]
+module = "construct.*"
+ignore_missing_imports = true
+
 [[tool.mypy.overrides]]
 module = "identify_encryption"
 ignore_missing_imports = true
