@@ -67,6 +67,10 @@ class XP3File:
         try:
             if mode == 'r':
                 self.read_files()
+                # The engine filters every file regardless of flags; some games
+                # leave them all clear, so treat that as "everything is encrypted".
+                if not any(f.encrypted for f in self.files):
+                    self.force_encrypt = True
             else:
                 self.fp.write(XP3CreateHeader.build({"real_info_offset": 0}))
         except Exception:
