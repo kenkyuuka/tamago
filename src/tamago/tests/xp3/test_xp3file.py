@@ -230,6 +230,62 @@ class TestCompressionOrder:
                 assert _extract_member(xp3, member) == self.CONTENT
 
 
+CHAPTERS = {
+    'rabbit_hole.txt': b'Down, down, down. Would the fall never come to an end?',
+    'pool_of_tears.txt': b'Curiouser and curiouser! cried Alice.',
+}
+
+
+@pytest.mark.integration
+class TestEncryptedFlag:
+    """The engine filters every file regardless of the per-file encrypted flag."""
+
+    NOTICE = b'$$$ This is a protected archive. $$$'
+
+    def _write_sources(self, tmpdir, contents):
+        paths = []
+        for name, data in contents.items():
+            path = os.path.join(tmpdir, name)
+            with open(path, 'wb') as f:
+                f.write(data)
+            paths.append(path)
+        return paths
+
+    def test_decrypts_when_no_file_is_flagged(self):
+        from tamago.formats.xp3.models import XP3_FLAG_ENCRYPTED
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            paths = self._write_sources(tmpdir, CHAPTERS)
+            xp3path = os.path.join(tmpdir, 'data.xp3')
+            with XP3File(xp3path, 'x', encryption=ENC) as xp3:
+                for path in paths:
+                    xp3.write(path)
+                for info in xp3.files:
+                    info.flags &= ~XP3_FLAG_ENCRYPTED
+
+            with XP3File(xp3path) as xp3:
+                assert not any(info.encrypted for info in xp3.files)
+                assert [_extract_member(xp3, m) for m in xp3.files] != list(CHAPTERS.values())
+
+            with XP3File(xp3path, encryption=ENC) as xp3:
+                assert [_extract_member(xp3, m) for m in xp3.files] == list(CHAPTERS.values())
+
+    def test_unflagged_file_stays_plain_when_others_are_flagged(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            paths = self._write_sources(tmpdir, CHAPTERS)
+            (notice,) = self._write_sources(tmpdir, {'notice.txt': self.NOTICE})
+            xp3path = os.path.join(tmpdir, 'data.xp3')
+            with XP3File(xp3path, 'x', encryption=ENC) as xp3:
+                for path in paths:
+                    xp3.write(path)
+                xp3.encryption = None
+                xp3.write(notice)
+
+            with XP3File(xp3path, encryption=ENC) as xp3:
+                assert [m.encrypted for m in xp3.files] == [True, True, False]
+                assert [_extract_member(xp3, m) for m in xp3.files] == [*CHAPTERS.values(), self.NOTICE]
+
+
 @pytest.mark.unit
 class TestInvalidFile:
     def test_bad_magic(self):
