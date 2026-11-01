@@ -1,7 +1,9 @@
+import gc
 import logging
 import os
 import struct
 import tempfile
+import warnings
 import zlib
 
 import pytest
@@ -180,6 +182,27 @@ class TestRoundTrip:
             with XP3File(xp3path, encryption=encryption) as xp3:
                 assert xp3.files[0].encrypted == (encryption is not None)
                 assert _extract_member(xp3, xp3.files[0]) == BINARY
+
+
+@pytest.mark.integration
+class TestWriteClosesSource:
+    """write() must close the source file it opens."""
+
+    def test_no_resource_warning(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            srcfile = os.path.join(tmpdir, 'rabbit_hole.txt')
+            with open(srcfile, 'wb') as f:
+                f.write(b'Down, down, down. Would the fall never come to an end?')
+
+            xp3path = os.path.join(tmpdir, 'wonderland.xp3')
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter('always', ResourceWarning)
+                with XP3File(xp3path, 'x') as xp3:
+                    xp3.write(srcfile)
+                gc.collect()
+
+            leaks = [w for w in caught if issubclass(w.category, ResourceWarning)]
+            assert not leaks, [str(w.message) for w in leaks]
 
 
 @pytest.mark.integration

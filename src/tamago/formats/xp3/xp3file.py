@@ -133,21 +133,20 @@ class XP3File:
         if isinstance(filepath, str):
             if not arcname:
                 arcname = os.path.basename(filepath)
-            fp = open(filepath, 'rb')
+            with open(filepath, 'rb') as fp:
+                raw = fp.read()
         else:
             raise ValueError(f'Invalid filepath: {filepath!r}')
 
-        file_size = os.fstat(fp.fileno()).st_size
+        file_size = len(raw)
         xi = XP3Info(
             file_name=arcname,
             original_size=file_size,
             flags=XP3_FLAG_ENCRYPTED if self.encryption else 0,
         )
         segment = Container(flags=0, offset=0, original_size=file_size, compressed_size=0)
-        fp.seek(0, 0)
 
-        # Read all data to compute adler hash on plaintext
-        raw = fp.read()
+        # Adler hash is computed on the plaintext
         xi.key = zlib.adler32(raw)
 
         # Encrypt before compressing: the engine decrypts inflated data.
