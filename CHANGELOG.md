@@ -4,10 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+## 1.2.0 — 2026-11-01
+
 ### Added
 
 - Ship a `py.typed` marker so type checkers use tamago's inline annotations.
 - XP3: `auto_detect()` takes a `quiet` argument to stop it printing the `encryption_library.toml` snippet to stderr when the probe stage finds a match.
+
+### Fixed
+
+- XP3: `XP3File.write` closes the source file after reading it. Previously every call left a file handle open and raised a `ResourceWarning`.
 
 ## 1.1.1 — 2026-10-29
 
