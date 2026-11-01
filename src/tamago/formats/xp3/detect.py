@@ -494,7 +494,7 @@ def _print_probe_snippet(xp3_path, encryption_name, extra_params):
     print(snippet, file=sys.stderr)
 
 
-def auto_detect(xp3_path, force_probe=False):
+def auto_detect(xp3_path, force_probe=False, quiet=False):
     """Auto-detect the encryption scheme for an XP3 file.
 
     Tries detection in order: TPM hash, XP3 structure hash, probe.
@@ -503,6 +503,8 @@ def auto_detect(xp3_path, force_probe=False):
         xp3_path: Path to the XP3 file.
         force_probe: If True, the probe stage will try decryption even when
             no files have the encrypted flag set.
+        quiet: If True, don't print the encryption_library.toml snippet to
+            stderr when the probe stage finds a match.
 
     Returns an XP3Encryption instance, or None if no encryption was detected.
     """
@@ -517,7 +519,7 @@ def auto_detect(xp3_path, force_probe=False):
         return result[1]
 
     # Stage 3: Probe
-    result = detect_by_probe(xp3_path, force=force_probe)
+    result = detect_by_probe(xp3_path, force=force_probe, quiet=quiet)
     if result:
         return result[0]
 

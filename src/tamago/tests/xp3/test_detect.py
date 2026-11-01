@@ -312,3 +312,13 @@ class TestAutoDetect:
                     outpath = os.path.join(tmpdir, member.file_name)
                     xp3.extract(member, outpath)
                     assert os.path.getsize(outpath) == member.original_size
+
+    def test_probe_prints_snippet_by_default(self, capsys):
+        enc = auto_detect(os.path.join(SAMPLES, 'encrypted_with_png.xp3'))
+        assert isinstance(enc, HashXorEncryption)
+        assert 'encryption_library.toml' in capsys.readouterr().err
+
+    def test_quiet_suppresses_snippet(self, capsys):
+        enc = auto_detect(os.path.join(SAMPLES, 'encrypted_with_png.xp3'), quiet=True)
+        assert isinstance(enc, HashXorEncryption)
+        assert capsys.readouterr().err == ''
