@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Added
+
+- Ren'Py RPA archives: extract RPA-1.0, RPA-2.0 and RPA-3.0, and create RPA-3.0. Archive indexes are pickles, so tamago loads them with a restricted unpickler that cannot run code from the archive, and refuses to extract members whose names would land outside the output directory.
+
 ## 1.2.0 — 2026-11-01
 
 ### Added
