@@ -8,6 +8,11 @@ All notable changes to this project will be documented in this file.
 
 - Ren'Py RPA archives: extract RPA-1.0, RPA-2.0 and RPA-3.0, and create RPA-3.0. Archive indexes are pickles, so tamago loads them with a restricted unpickler that cannot run code from the archive, and refuses to extract members whose names would land outside the output directory.
 
+### Fixed
+
+- Extraction refuses archives whose member names would land outside the output directory, such as `../escaped.txt`, before writing anything. Previously a crafted ARC, DET, GSP, VF or XP3 archive could write files anywhere the user could write. Names containing `..` that stay inside the output directory still extract.
+- XP3: `extract_all` treats `\` in member names as a directory separator, like the other formats.
+
 ## 1.2.0 — 2026-11-01
 
 ### Added

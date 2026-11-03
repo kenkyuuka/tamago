@@ -16,6 +16,7 @@ import pathlib
 import struct
 
 from tamago.formats.gsp import spt_crypto
+from tamago.formats.member_paths import plan_extraction
 
 logger = logging.getLogger(__name__)
 
@@ -157,13 +158,10 @@ class GSPFile:
 
         If *glob* is given, only members whose names match the pattern are
         extracted.  If *decrypt* is True, encrypted SPT/DAT files are
-        decrypted before writing.
+        decrypted before writing.  Raises ValueError, before writing anything,
+        if a selected member's name would place it outside *path*.
         """
-        for f in self.files:
-            if glob and not fnmatch.fnmatch(f.file_name, glob):
-                continue
-            parts = f.file_name.replace('\\', '/').split('/')
-            filepath = os.path.abspath(os.path.join(path, *parts))
+        for f, filepath in plan_extraction(self.files, path, glob):
             os.makedirs(os.path.dirname(filepath), exist_ok=True)
             self.extract(f, filepath, decrypt=decrypt)
 

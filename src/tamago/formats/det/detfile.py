@@ -20,6 +20,8 @@ import pathlib
 
 from construct import Bytes, GreedyRange, Int32sl, Int32ul, Struct, Terminated
 
+from tamago.formats.member_paths import plan_extraction
+
 logger = logging.getLogger(__name__)
 
 ATMEntry = Struct(
@@ -409,14 +411,10 @@ class DETFile:
         """Extract all members to directory *path*.
 
         If *glob* is given, only members whose names match the pattern are
-        extracted.
+        extracted.  Raises ValueError, before writing anything, if a selected
+        member's name would place it outside *path*.
         """
-        for f in self.files:
-            if glob and not fnmatch.fnmatch(f.file_name, glob):
-                continue
-            # Archive names may use backslash or forward slash separators.
-            parts = f.file_name.replace('\\', '/').split('/')
-            filepath = os.path.abspath(os.path.join(path, *parts))
+        for f, filepath in plan_extraction(self.files, path, glob):
             os.makedirs(os.path.dirname(filepath), exist_ok=True)
             self.extract(f, filepath)
 

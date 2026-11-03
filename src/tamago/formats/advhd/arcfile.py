@@ -17,6 +17,8 @@ import os
 import pathlib
 import struct
 
+from tamago.formats.member_paths import plan_extraction
+
 logger = logging.getLogger(__name__)
 
 HEADER_SIZE = 8
@@ -224,12 +226,12 @@ class ARCFile:
             f.write(data)
 
     def extract_all(self, path: str | os.PathLike, glob: str | None = None, decrypt: bool = True):
-        """Extract all members to directory *path*."""
-        for f in self.files:
-            if glob and not fnmatch.fnmatch(f.file_name, glob):
-                continue
-            parts = f.file_name.replace('\\', '/').split('/')
-            filepath = os.path.abspath(os.path.join(path, *parts))
+        """Extract all members to directory *path*.
+
+        Raises ValueError, before writing anything, if a selected member's name
+        would place it outside *path*.
+        """
+        for f, filepath in plan_extraction(self.files, path, glob):
             os.makedirs(os.path.dirname(filepath), exist_ok=True)
             self.extract(f, filepath, decrypt=decrypt)
 
