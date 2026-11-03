@@ -29,6 +29,7 @@ import zlib
 from construct import Const, Int32ul, Struct
 
 from tamago.formats.livemaker import crypto, dostime
+from tamago.formats.member_paths import plan_extraction
 
 logger = logging.getLogger(__name__)
 
@@ -472,13 +473,10 @@ class VFFile:
         converted to the platform's native separator on disk.  If *glob*
         is given, only entries whose names match the pattern are extracted.
         When ``convert_gal`` is true, ``.gal`` images are converted to PNG
-        on the way out.
+        on the way out.  Raises ValueError, before writing anything, if a
+        selected member's name would place it outside *path*.
         """
-        for f in self.files:
-            if glob and not fnmatch.fnmatch(f.file_name, glob):
-                continue
-            parts = f.file_name.replace('\\', '/').split('/')
-            filepath = os.path.abspath(os.path.join(path, *parts))
+        for f, filepath in plan_extraction(self.files, path, glob):
             os.makedirs(os.path.dirname(filepath), exist_ok=True)
             self.extract(f, filepath, convert_gal=convert_gal)
 

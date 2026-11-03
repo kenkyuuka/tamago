@@ -1,5 +1,4 @@
 import errno
-import fnmatch
 import io
 import logging
 import os
@@ -7,6 +6,8 @@ import threading
 import zlib
 
 from construct import Container, Int64ul
+
+from tamago.formats.member_paths import plan_extraction
 
 from . import simple_crypt
 from .models import (
@@ -325,9 +326,11 @@ class XP3File:
             logger.warning("Member %r has timestamp %r", member, member.timestamp)
 
     def extract_all(self, path, glob=None, convert_tlg=False, decode_text=True):
-        for f in self.files:
-            if glob and not fnmatch.fnmatch(f.file_name, glob):
-                continue
-            filepath = os.path.abspath(os.path.join(path, *f.file_name.split('/')))
+        """Extract all members to directory *path*.
+
+        Raises ValueError, before writing anything, if a selected member's name
+        would place it outside *path*.
+        """
+        for f, filepath in plan_extraction(self.files, path, glob):
             os.makedirs(os.path.dirname(filepath), exist_ok=True)
             self.extract(f, filepath, convert_tlg=convert_tlg, decode_text=decode_text)

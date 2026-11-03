@@ -23,11 +23,12 @@ import logging
 import os
 import pathlib
 import pickle
-import re
 import shutil
 import zlib
 from collections.abc import Iterator
 from typing import BinaryIO, NamedTuple
+
+from tamago.formats.member_paths import plan_extraction
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +47,6 @@ MAX_KEY = 0xFFFFFFFF
 MAX_INDEX_SIZE = 1 << 30
 
 _CHUNK_SIZE = 1 << 20
-_DRIVE_RE = re.compile(r'^[A-Za-z]:')
 
 
 def _latin1_encode(text: str, encoding: 'str | bytes') -> bytes:
@@ -171,17 +171,6 @@ def _decode_members(index: dict, key: int) -> list[RPAInfo]:
             raise ValueError(f"Invalid RPA index entry for {name!r}: {entries!r}")
         members.append(RPAInfo(name, [_decode_entry(name, entry, key) for entry in entries]))
     return members
-
-
-def _safe_parts(name: str) -> list[str] | None:
-    """Split member *name* into path components, or return None if it could escape the output directory."""
-    normalized = name.replace('\\', '/')
-    if normalized.startswith('/') or _DRIVE_RE.match(normalized) or '\0' in normalized:
-        return None
-    parts = [part for part in normalized.split('/') if part not in ('', '.')]
-    if not parts or '..' in parts:
-        return None
-    return parts
 
 
 class RPAFile:
@@ -351,17 +340,7 @@ class RPAFile:
         extracted.  Raises ValueError, before writing anything, if a selected
         member's name would place it outside *path*.
         """
-        selected = []
-        for info in self.files:
-            if glob and not fnmatch.fnmatch(info.file_name, glob):
-                continue
-            parts = _safe_parts(info.file_name)
-            if parts is None:
-                raise ValueError(f"Refusing to extract RPA member with unsafe name: {info.file_name!r}")
-            selected.append((info, parts))
-
-        for info, parts in selected:
-            filepath = os.path.abspath(os.path.join(path, *parts))
+        for info, filepath in plan_extraction(self.files, path, glob):
             os.makedirs(os.path.dirname(filepath), exist_ok=True)
             self.extract(info, filepath)
 
