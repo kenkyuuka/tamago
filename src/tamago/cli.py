@@ -5,12 +5,14 @@ import pathlib
 import sys
 
 from tamago.formats.livemaker.vffile import VF_MAGIC as LIVEMAKER_MAGIC
+from tamago.formats.rpa.rpafile import RPA_MAGIC
 from tamago.formats.xp3.models import XP3_MAGIC
 
 # Magic bytes used to identify archive formats.
 FORMAT_MAGIC = {
     'xp3': XP3_MAGIC,
     'livemaker': LIVEMAKER_MAGIC,
+    'rpa': RPA_MAGIC,
 }
 
 # Formats detected by file extension (no magic bytes).
@@ -18,6 +20,9 @@ EXTENSION_FORMATS = {
     '.det': 'det',
     '.gsp': 'gsp',
     '.arc': 'advhd',
+    # RPA-1.0 has no magic: an index in .rpi, and headerless data in .rpa.
+    '.rpa': 'rpa',
+    '.rpi': 'rpa',
 }
 
 

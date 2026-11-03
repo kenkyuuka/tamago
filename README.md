@@ -13,6 +13,7 @@ Requires Python 3.10 or later.
 | GSP    | [AGSD](https://github.com/kenkyuuka/research-vault/blob/main/engines/AGSD.md) | yes | yes |
 | ARC    | AdvHD (WillPlus V2) | yes | yes |
 | VF     | LiveMaker | yes | yes |
+| RPA    | Ren'Py | yes | yes |
 
 ## Installation
 
