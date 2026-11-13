@@ -23,12 +23,6 @@ Requires Python 3.10 or later.
 pip install tamagoarc
 ```
 
-To enable TLG image conversion, install with the `images` extra:
-
-```console
-pip install tamagoarc[images]
-```
-
 ## Usage
 
 ### tamago CLI
