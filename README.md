@@ -14,6 +14,8 @@ Requires Python 3.10 or later.
 | ARC    | AdvHD (WillPlus V2) | yes | yes |
 | VF     | LiveMaker | yes | yes |
 | RPA    | Ren'Py | yes | yes |
+| DXA    | DxLib (versions 1–4) | yes | yes |
+| MED    | Fudegaki Soft (DxLib) | yes | yes |
 
 ## Installation
 
