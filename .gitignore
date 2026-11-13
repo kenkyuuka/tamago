@@ -14,6 +14,8 @@ build/
 .pytest_cache/
 .coverage
 htmlcov/
+.mypy_cache/
+.ruff_cache/
 
 # IDE
 .idea/
@@ -24,6 +26,10 @@ htmlcov/
 # OS
 .DS_Store
 Thumbs.db
+
+# Docker (local-only, host-specific)
+.env
+docker-compose.override.yml
 
 # Local settings
 local.toml

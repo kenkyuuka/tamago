@@ -8,6 +8,9 @@ stored plainly.
 
 The keyword is not stored anywhere, but the ``_VIEW`` script always begins with
 the same text, so it can be recovered from the archive itself.
+
+Image archives hold PRS images and music archives hold WADY audio; extraction
+can convert these to PNG and WAV.
 """
 
 import fnmatch
@@ -21,6 +24,8 @@ from typing import BinaryIO
 
 from construct import Bytes, Const, Int16ul, Int32ul, Struct
 
+from tamago.formats.med.prs import decode_prs, is_prs
+from tamago.formats.med.wady import decode_wady, is_wady
 from tamago.formats.member_paths import plan_extraction
 
 logger = logging.getLogger(__name__)
@@ -217,6 +222,7 @@ class MEDFile:
         self.files: list[MEDInfo] = []
         self._by_name: dict[str, MEDInfo] = {}
         self._keyword_bytes = keyword.encode('cp932') if keyword else None
+        self._convert_warned: set[tuple[str, str]] = set()
 
         if mode == 'r':
             self._open_for_read()
@@ -341,22 +347,69 @@ class MEDFile:
             data = decrypt_script(data, self._keyword_bytes)
         return data
 
-    def extract(self, member: 'MEDInfo | str', path: str | os.PathLike):
-        """Extract *member* to a new file at *path*."""
+    def extract(
+        self,
+        member: 'MEDInfo | str',
+        path: str | os.PathLike,
+        convert_prs: bool = False,
+        convert_wady: bool = False,
+    ):
+        """Extract *member* to a new file at *path*.
+
+        With *convert_prs*, a PRS image is written as PNG to *path* plus
+        ``.png``; with *convert_wady*, WADY audio is written as WAV to *path*
+        plus ``.wav``.  Members are recognised by their contents.  A member
+        that cannot be converted is written as is, with a warning.
+        """
         data = self.read(member)
+        name = self._resolve(member).file_name
+        if convert_prs and is_prs(data):
+            if self._try_convert(name, 'PRS', lambda: decode_prs(data).save(os.fspath(path) + '.png', 'PNG')):
+                return
+        elif convert_wady and is_wady(data):
+            if self._try_convert(name, 'WADY', lambda: decode_wady(data).save_wav(os.fspath(path) + '.wav')):
+                return
         with open(path, 'xb') as f:
             f.write(data)
 
-    def extract_all(self, path: str | os.PathLike, glob: str | None = None):
+    def _try_convert(self, name: str, kind: str, convert) -> bool:
+        """Run *convert*, returning False (and warning once per kind and error) if the data is invalid."""
+        try:
+            convert()
+        except (ValueError, NotImplementedError) as exc:
+            logger.debug('cannot convert %s %s: %s', kind, name, exc)
+            key = (kind, type(exc).__name__)
+            if key not in self._convert_warned:
+                self._convert_warned.add(key)
+                logger.warning(
+                    'Cannot convert %s data in %s; keeping it as is (%s: %s). '
+                    'Similar failures are logged at debug level',
+                    kind,
+                    name,
+                    type(exc).__name__,
+                    exc,
+                )
+            return False
+        return True
+
+    def extract_all(
+        self,
+        path: str | os.PathLike,
+        glob: str | None = None,
+        convert_prs: bool = False,
+        convert_wady: bool = False,
+    ):
         """Extract all members to directory *path*.
 
         If *glob* is given, only members whose names match the pattern are
-        extracted.  Raises ValueError, before writing anything, if a selected
-        member's name would place it outside *path*.
+        extracted.  *convert_prs* and *convert_wady* convert PRS images to PNG
+        and WADY audio to WAV, as in :meth:`extract`.  Raises ValueError,
+        before writing anything, if a selected member's name would place it
+        outside *path*.
         """
         for info, filepath in plan_extraction(self.files, path, glob):
             os.makedirs(os.path.dirname(filepath), exist_ok=True)
-            self.extract(info, filepath)
+            self.extract(info, filepath, convert_prs=convert_prs, convert_wady=convert_wady)
 
     # -- creation --------------------------------------------------------------
 

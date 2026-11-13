@@ -1,0 +1,15 @@
+# Base compose file: committed, free of host-specific paths/secrets.
+# Per-machine customizations live in docker-compose.override.yml (gitignored),
+# which docker compose merges in automatically.
+
+services:
+  app:
+    container_name: tamago-dev
+    image: tamago:dev
+    command: sh -c 'sleep infinity'
+    env_file:
+      - path: .env
+        required: false
+    working_dir: /workspace
+    volumes:
+      - ./:/workspace

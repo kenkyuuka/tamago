@@ -11,6 +11,18 @@ class MEDHandler:
         parser.add_argument(
             '--no-decrypt', action='store_false', dest='decrypt', help='extract scripts as stored, still encrypted'
         )
+        parser.add_argument(
+            '--no-convert-prs',
+            dest='convert_prs',
+            action='store_false',
+            help='keep PRS images as stored instead of converting them to PNG',
+        )
+        parser.add_argument(
+            '--no-convert-wady',
+            dest='convert_wady',
+            action='store_false',
+            help='keep WADY audio as stored instead of converting it to WAV',
+        )
 
     def add_create_args(self, parser):
         parser.add_argument('--keyword', help='encrypt scripts with this keyword (needed for decrypted scripts)')
@@ -36,7 +48,12 @@ class MEDHandler:
                         f"(pass --keyword {med.keyword} to recreate it)",
                         file=sys.stderr,
                     )
-                med.extract_all(args.output, glob=getattr(args, 'glob', None))
+                med.extract_all(
+                    args.output,
+                    glob=getattr(args, 'glob', None),
+                    convert_prs=getattr(args, 'convert_prs', True),
+                    convert_wady=getattr(args, 'convert_wady', True),
+                )
         except ValueError as e:
             print(f"Error: {e}", file=sys.stderr)
             raise SystemExit(1) from None
