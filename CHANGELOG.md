@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+## 1.4.0 — 2026-11-13
+
 ### Added
 
 - DxLib DXA archives, versions 1 to 4: extract, including LZ-compressed members and nested directories, and create version 4 with an optional password and `--compress`. The key is recovered from the archive itself, so password-protected archives extract without their password. Encrypted DXA archives have no fixed signature, so tamago recognises them by recovering the key and parsing the index, whatever the file extension.
