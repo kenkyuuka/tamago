@@ -65,42 +65,28 @@ def _sample_id(filename):
 class TestNonfreeTLGSamples:
     """Decoder smoke tests for real-world TLG images."""
 
-    def test_decodes_without_error(self, filename):
-        """The file decodes without raising an exception."""
-        path = os.path.join(NONFREE_TLG, filename)
-        img = open_tlg(path)
-        assert img is not None
+    def test_decodes_correctly(self, filename):
+        """The file decodes to a valid RGBA image matching its reference PNG.
 
-    def test_mode_is_rgba(self, filename):
-        """Decoded image is in RGBA mode."""
-        path = os.path.join(NONFREE_TLG, filename)
-        img = open_tlg(path)
-        assert img.mode == 'RGBA'
-
-    def test_dimensions_are_positive(self, filename):
-        """Decoded image has positive width and height."""
-        path = os.path.join(NONFREE_TLG, filename)
-        img = open_tlg(path)
-        w, h = img.size
-        assert w > 0 and h > 0, f"unexpected dimensions: {w}x{h}"
-
-    def test_has_nontrivial_data(self, filename):
-        """Decoded image has at least some non-zero pixel data.
-
-        Some images (e.g. transparent overlay placeholders) are legitimately
-        all-zero.  When a reference PNG exists and is also all-zero, the
-        decoder output is correct and the test passes.
+        Decoding is the expensive part, so every check on the decoded image
+        shares a single decode.
         """
         path = os.path.join(NONFREE_TLG, filename)
         img = open_tlg(path)
+        assert img is not None
+        assert img.mode == 'RGBA', f"unexpected mode: {img.mode}"
+        w, h = img.size
+        assert w > 0 and h > 0, f"unexpected dimensions: {w}x{h}"
+
         data = img.tobytes()
-        if all(b == 0 for b in data):
-            # Check if the reference PNG confirms the image is genuinely blank
-            png_path = os.path.splitext(path)[0] + '.png'
-            if os.path.exists(png_path):
-                ref = Image.open(png_path).convert('RGBA')
-                if all(b == 0 for b in ref.tobytes()):
-                    return  # genuinely blank image, decoder is correct
+        png_path = os.path.splitext(path)[0] + '.png'
+        reference = Image.open(png_path).convert('RGBA') if os.path.exists(png_path) else None
+        if reference is not None:
+            assert img.size == reference.size, f"size mismatch: {img.size} vs {reference.size}"
+            assert data == reference.tobytes(), "pixel data does not match reference PNG"
+        elif not any(data):
+            # Some images (e.g. transparent overlay placeholders) are legitimately
+            # all-zero, but only a reference PNG can confirm that.
             pytest.fail("image is entirely zero (no reference PNG to confirm this is expected)")
 
     def test_magic_matches_format(self, filename):
@@ -109,14 +95,3 @@ class TestNonfreeTLGSamples:
         with open(path, 'rb') as f:
             magic = f.read(11)
         assert magic in (TLG0_MAGIC, TLG5_MAGIC, TLG6_MAGIC), f"unexpected magic: {magic!r}"
-
-    def test_matches_reference_png(self, filename):
-        """Decoded image matches the reference PNG pixel-for-pixel."""
-        tlg_path = os.path.join(NONFREE_TLG, filename)
-        png_path = os.path.splitext(tlg_path)[0] + '.png'
-        if not os.path.exists(png_path):
-            pytest.skip("no reference PNG")
-        decoded = open_tlg(tlg_path)
-        reference = Image.open(png_path).convert('RGBA')
-        assert decoded.size == reference.size, f"size mismatch: {decoded.size} vs {reference.size}"
-        assert decoded.tobytes() == reference.tobytes(), "pixel data does not match reference PNG"
