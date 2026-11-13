@@ -7,6 +7,7 @@ from tamago.formats.det.detfile import DETFile
 from tamago.formats.dxa import DXAFile
 from tamago.formats.gsp.gspfile import GSPFile
 from tamago.formats.livemaker.vffile import VFFile
+from tamago.formats.med import MEDFile
 from tamago.formats.rpa.rpafile import RPAFile
 from tamago.formats.xp3 import XP3File
 
@@ -14,6 +15,7 @@ FORMATS = [
     pytest.param(ARCFile, 'test.arc', id='arc'),
     pytest.param(DETFile, 'test.det', id='det'),
     pytest.param(DXAFile, 'test.dxa', id='dxa'),
+    pytest.param(MEDFile, 'test.med', id='med'),
     pytest.param(GSPFile, 'test.gsp', id='gsp'),
     pytest.param(RPAFile, 'test.rpa', id='rpa'),
     pytest.param(VFFile, 'test.dat', id='vf'),

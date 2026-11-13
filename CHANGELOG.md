@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - DxLib DXA archives, versions 1 to 4: extract, including LZ-compressed members and nested directories, and create version 4 with an optional password and `--compress`. The key is recovered from the archive itself, so password-protected archives extract without their password. Encrypted DXA archives have no fixed signature, so tamago recognises them by recovering the key and parsing the index, whatever the file extension.
+- Fudegaki Soft "MD" archives (`md_gra.med`, `md_bgm.med`, `md_scr.med`...): extract and create. Script archives are decrypted with a per-game keyword that tamago recovers from the archive's `_VIEW` script and reports, so it can be passed back with `--keyword` when recreating the archive. The scripts' running counters are recomputed on create. `--no-decrypt` extracts scripts as stored.
 
 ## 1.3.0 — 2026-11-03
 

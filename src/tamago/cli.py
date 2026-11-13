@@ -6,6 +6,7 @@ import sys
 
 from tamago.formats.dxa.dxafile import is_dxa
 from tamago.formats.livemaker.vffile import VF_MAGIC as LIVEMAKER_MAGIC
+from tamago.formats.med.medfile import is_med_header
 from tamago.formats.rpa.rpafile import RPA_MAGIC
 from tamago.formats.xp3.models import XP3_MAGIC
 
@@ -60,6 +61,8 @@ def detect_format(path):
             return name
     if trailer.endswith(b'lv') and header[:2] == b'MZ':
         return 'livemaker'
+    if is_med_header(header):
+        return 'med'
     fmt = _detect_by_extension(path)
     if fmt is None and is_dxa(path):
         # A DXA signature is encrypted with the archive's key, so it can only be
