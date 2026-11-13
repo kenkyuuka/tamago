@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Added
+
+- MED: convert PRS images to PNG and WADY music to WAV on extract (`--no-convert-prs` and `--no-convert-wady` to opt out). Members are recognised by their contents, and `.png` or `.wav` is appended to the member name. Conversion is one-way: extract with the opt-out flags to recreate an archive. WADY files in the rarer "v2" coding, not seen in any game so far, are extracted unconverted with a warning.
+
 ## 1.4.0 — 2026-11-13
 
 ### Added
