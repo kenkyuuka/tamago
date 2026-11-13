@@ -1,8 +1,11 @@
 """Nonfree roundtrip tests for simple-crypt text files.
 
-Walks every XP3 archive under ``nonfree/``, extracts each member, and
-exercises ``simple_crypt.decode`` + ``simple_crypt.encode`` on any member
-whose first three bytes are the ``FE FE 01`` magic.  Verifies that:
+Walks every XP3 archive under ``nonfree/``, extracts each member that might
+be text, and exercises ``simple_crypt.decode`` + ``simple_crypt.encode`` on
+any whose first three bytes are the ``FE FE 01`` magic.  Members with binary
+media extensions are skipped without decrypting them: simple crypt only wraps
+text, and decrypting a large archive's images and audio can take minutes.
+Verifies that:
 
 - the decoded buffer starts with the UTF-16LE BOM and decodes as UTF-16LE
 - re-encoding produces the original bytes verbatim (round-trip)
@@ -18,6 +21,7 @@ import pytest
 from tamago.formats.xp3 import simple_crypt
 from tamago.formats.xp3.detect import auto_detect
 from tamago.formats.xp3.xp3file import XP3File
+from tamago.tests.xp3.nonfree_sampling import may_hold_text
 
 NONFREE = os.path.join(os.path.dirname(__file__), 'nonfree')
 
@@ -49,6 +53,8 @@ def test_simple_crypt_roundtrip(relpath):
     seen = 0
     with tempfile.TemporaryDirectory() as tmpdir, XP3File(path, encryption=encryption) as xp3:
         for i, member in enumerate(xp3.files):
+            if not may_hold_text(member):
+                continue
             outpath = os.path.join(tmpdir, f"m_{i:06d}")
             try:
                 xp3.extract(member, outpath)

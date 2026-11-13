@@ -1,8 +1,13 @@
 """Member-content roundtrip tests for real XP3 archives in ``nonfree/``.
 
-For each XP3 sample, extract every member, build a fresh (unencrypted) XP3
+For each XP3 sample, extract its members, build a fresh (unencrypted) XP3
 from the extracted files, extract it again, and verify that every member's
 bytes survive the round-trip.
+
+Large archives are sampled rather than extracted whole: every member of each
+small file type, plus an evenly spaced handful of each large one (see
+``nonfree_sampling``).  Decrypting a whole archive can take minutes, and
+hundreds more near-identical images or voice clips add little coverage.
 
 Archive bytes are not checked: real XP3s may legitimately carry leftover
 data from earlier builds, different compression choices, or different
@@ -22,8 +27,10 @@ import tempfile
 
 import pytest
 
+from tamago.formats.member_paths import member_path
 from tamago.formats.xp3.detect import auto_detect
 from tamago.formats.xp3.xp3file import XP3File
+from tamago.tests.xp3.nonfree_sampling import select_members
 
 NONFREE = os.path.join(os.path.dirname(__file__), 'nonfree')
 
@@ -61,7 +68,7 @@ def _read_all_under(root):
 @skip_no_samples
 @pytest.mark.parametrize('relpath', xp3_files)
 def test_xp3_member_content_roundtrip(relpath):
-    """Every member that extracts from the source also extracts identically after rebuild."""
+    """Every sampled member that extracts from the source also extracts identically after rebuild."""
     path = os.path.join(NONFREE, relpath)
     encryption = auto_detect(path)
 
@@ -73,7 +80,10 @@ def test_xp3_member_content_roundtrip(relpath):
         # source -> ext1. Disable text decoding so we compare raw archived
         # bytes rather than the post-decode UTF-16LE form.
         with XP3File(path, encryption=encryption) as xp3:
-            xp3.extract_all(ext1, decode_text=False)
+            for member in select_members(xp3.files):
+                target = member_path(ext1, member.file_name)
+                os.makedirs(os.path.dirname(target), exist_ok=True)
+                xp3.extract(member, target, decode_text=False)
 
         if not os.path.isdir(ext1) or not any(os.scandir(ext1)):
             pytest.skip(f"{relpath}: no extractable members")
