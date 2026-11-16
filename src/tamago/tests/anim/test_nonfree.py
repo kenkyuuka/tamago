@@ -1,7 +1,8 @@
 """Roundtrip tests for real ANIM game files in nonfree/.
 
 The nonfree directory is gitignored: populate it manually with packs
-(``*_wave.pck``, ``psbpack.dat``) to enable these tests.  They skip when no
+(``*_wave.pck``, ``psbpack.dat``) and enciphered files (``*_sce.dat``,
+``*_define.dat``, ``cg/*.gax``) to enable these tests.  They skip when no
 samples are present.
 """
 
@@ -10,7 +11,7 @@ import os
 
 import pytest
 
-from tamago.formats.anim import PCKFile, is_eog, is_pck, unwrap_eog
+from tamago.formats.anim import PCKFile, decrypt, encrypt, is_encrypted, is_eog, is_pck, stored_key, unwrap_eog
 
 NONFREE = os.path.join(os.path.dirname(__file__), 'nonfree')
 
@@ -27,7 +28,13 @@ def _collect(predicate):
     return sorted(os.path.relpath(path, NONFREE) for path in _walk() if predicate(path))
 
 
+def _enciphered(path):
+    with open(path, 'rb') as f:
+        return is_encrypted(f.read(20))
+
+
 packs = _collect(is_pck)
+enciphered = _collect(_enciphered)
 
 
 def _digest(data):
@@ -86,3 +93,16 @@ class TestNonfreePacks:
                 assert chunk == b.read(1 << 20)
                 if not chunk:
                     break
+
+
+@pytest.mark.nonfree
+@pytest.mark.integration
+@pytest.mark.skipif(not enciphered, reason="no nonfree ANIM enciphered samples available")
+@pytest.mark.parametrize('relpath', enciphered)
+def test_decrypt_and_reencrypt_roundtrip(relpath):
+    with open(os.path.join(NONFREE, relpath), 'rb') as f:
+        data = f.read()
+    plain = decrypt(data)
+    if relpath.lower().endswith('.gax'):
+        assert plain.startswith(b'\x89PNG\r\n\x1a\n'), relpath
+    assert encrypt(plain, stored_key(data)) == data

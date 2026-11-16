@@ -176,6 +176,10 @@ def main():
         handler.add_create_args(crt_p)
         crt_p.set_defaults(func=handler.cmd_create)
 
+        # Optional format-specific actions beyond extract and create.
+        if hasattr(handler, 'add_commands'):
+            handler.add_commands(fmt_sub)
+
     args, remaining = parser.parse_known_args()
 
     if not hasattr(args, 'func'):
