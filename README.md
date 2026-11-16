@@ -17,6 +17,7 @@ Requires Python 3.10 or later.
 | DXA    | DxLib (versions 1–4) | yes | yes |
 | MED    | Fudegaki Soft (DxLib) | yes | yes |
 | PCK    | ANIM (`*_wave.pck`, `psbpack.dat`) | yes | yes |
+| YPF    | YU-RIS (versions 461–500; also YSTB scripts and YCG images) | yes | yes |
 
 ## Installation
 
@@ -51,6 +52,17 @@ ANIM games also encipher their scripts and images as single files (`*_sce.dat`, 
 tamago anim decrypt game_dir/cg/BG010.gax BG010.png
 tamago anim decrypt game_dir decrypted_dir
 tamago anim encrypt decrypted_dir enciphered_dir
+```
+
+YU-RIS archives must be recreated with the version, name key and name-length table the game expects. `--like` copies them from one of the game's own archives:
+
+```bash
+tamago yuris extract pac/cg.ypf cg_dir --convert-ycg   # YCG images (stored as .png) become real PNGs
+tamago yuris create cg_dir cg.ypf --like pac/cg.ypf --encode-ycg
+tamago yuris decrypt ysbin_dir plain_dir               # YSTB scripts; the key is recovered automatically
+tamago yuris encrypt plain_dir ysbin_dir --key 96ac6fd3
+tamago yuris decode-ycg ycg_dir png_dir                # standalone YCG <-> PNG conversion
+tamago yuris encode-ycg png_dir ycg_dir
 ```
 
 ### Python API
