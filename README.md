@@ -16,6 +16,7 @@ Requires Python 3.10 or later.
 | RPA    | Ren'Py | yes | yes |
 | DXA    | DxLib (versions 1–4) | yes | yes |
 | MED    | Fudegaki Soft (DxLib) | yes | yes |
+| PCK    | ANIM (`*_wave.pck`, `psbpack.dat`) | yes | yes |
 
 ## Installation
 
@@ -42,6 +43,14 @@ tamago det create source_dir output.det --index-format atm
 
 # Create an archive (format must be specified)
 tamago create --format xp3 source_dir output.xp3
+```
+
+ANIM games also encipher their scripts and images as single files (`*_sce.dat`, `*_define.dat`, `cg/*.gax`). Decrypt or encrypt a file, or every such file under a directory:
+
+```console
+tamago anim decrypt game_dir/cg/BG010.gax BG010.png
+tamago anim decrypt game_dir decrypted_dir
+tamago anim encrypt decrypted_dir enciphered_dir
 ```
 
 ### Python API

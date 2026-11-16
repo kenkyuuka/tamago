@@ -4,6 +4,7 @@ import logging
 import pathlib
 import sys
 
+from tamago.formats.anim.pckfile import is_pck
 from tamago.formats.dxa.dxafile import is_dxa
 from tamago.formats.livemaker.vffile import VF_MAGIC as LIVEMAKER_MAGIC
 from tamago.formats.med.medfile import is_med_header
@@ -64,6 +65,10 @@ def detect_format(path):
     if is_med_header(header):
         return 'med'
     fmt = _detect_by_extension(path)
+    if fmt is None and is_pck(path):
+        # ANIM packs have no signature either: recognised by an index that
+        # describes the file exactly.
+        return 'anim'
     if fmt is None and is_dxa(path):
         # A DXA signature is encrypted with the archive's key, so it can only be
         # recognised by recovering the key and parsing the index.
@@ -170,6 +175,10 @@ def main():
         )
         handler.add_create_args(crt_p)
         crt_p.set_defaults(func=handler.cmd_create)
+
+        # Optional format-specific actions beyond extract and create.
+        if hasattr(handler, 'add_commands'):
+            handler.add_commands(fmt_sub)
 
     args, remaining = parser.parse_known_args()
 
