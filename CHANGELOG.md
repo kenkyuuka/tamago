@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Added
+
+- ANIM packs (`voice/*_wave.pck`, `cg/psbpack.dat`): extract and create. Packs have no signature, so tamago recognises them by checking that the index describes the file exactly. EOG audio is unwrapped to plain Ogg on extract (`--no-convert-eog` to opt out), and `.ogg` files are wrapped back as `.eog` on create (`--no-wrap-ogg` to opt out). Members are written sorted by name, ignoring case, as in the games' own packs.
+
 ## 1.5.0 — 2026-11-13
 
 ### Added
