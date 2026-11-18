@@ -19,6 +19,7 @@ Requires Python 3.10 or later.
 | PCK    | ANIM (`*_wave.pck`, `psbpack.dat`) | yes | yes |
 | YPF    | YU-RIS (versions 461–500; also YSTB scripts and YCG images) | yes | yes |
 | DAT    | BlackRainbow ADVDX (`.dat`/`.pak`; also `_BMD` images) | yes | yes |
+| PSB    | E-mote models (versions 2–4; e.g. from ANIM's `psbpack.dat`) | yes | yes |
 
 ## Installation
 
@@ -74,6 +75,15 @@ tamago blackrainbow create bga_dir sj_bga.dat                         # PNGs are
 tamago blackrainbow create spt_dir sj_spt.dat --kind script --game-id 15432 --slots 192
 tamago blackrainbow decode-bmd bmd_dir png_dir                        # standalone _BMD <-> PNG conversion
 tamago blackrainbow encode-bmd png_dir bmd_dir
+```
+
+E-mote PSB files are decompiled to `psb.json` (the value tree), the resource chunks (`resources/0.bin`, ...) and the texture atlases as PNG, and compiled back from the JSON and chunks. The encryption key is recovered from version 3 and 4 files; ANIM's is built in, and others can be given with `--key`. The tree in `psb.json` writes single-precision floats as plain numbers, and resource references and other values JSON lacks as one-key objects (`{"$resource": 0}`):
+
+```console
+tamago psb extract Malice100.psb model_dir     # psb.json, resources/, textures/*.png
+tamago psb create model_dir Malice100.psb      # encrypted as the original was (--no-encrypt for a plain file)
+tamago psb decrypt Malice100.psb plain.psb
+tamago psb info Malice100.psb
 ```
 
 ### Python API
