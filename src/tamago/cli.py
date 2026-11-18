@@ -9,6 +9,7 @@ from tamago.formats.blackrainbow.datfile import is_advdx_dat
 from tamago.formats.dxa.dxafile import is_dxa
 from tamago.formats.livemaker.vffile import VF_MAGIC as LIVEMAKER_MAGIC
 from tamago.formats.med.medfile import is_med_header
+from tamago.formats.psb.psbfile import MAGIC as PSB_MAGIC
 from tamago.formats.rpa.rpafile import RPA_MAGIC
 from tamago.formats.xp3.models import XP3_MAGIC
 from tamago.formats.yuris.ypf import YPF_MAGIC
@@ -19,6 +20,7 @@ FORMAT_MAGIC = {
     'livemaker': LIVEMAKER_MAGIC,
     'rpa': RPA_MAGIC,
     'yuris': YPF_MAGIC,
+    'psb': PSB_MAGIC,
 }
 
 # Formats detected by file extension (no magic bytes).
