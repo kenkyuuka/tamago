@@ -34,6 +34,14 @@ TREE = {'hat': 'mad', 'tea': [5, -2, 0.5, None, Resource(0)]}
 
 
 @pytest.mark.unit
+def test_package_exports_write():
+    from tamago.formats import psb
+
+    assert 'write' in psb.__all__
+    assert psb.read(psb.write(psb.PSB(root={'cheshire': 'grin'}))).root == {'cheshire': 'grin'}
+
+
+@pytest.mark.unit
 class TestNames:
     def test_builds_trie_as_e_mote_does(self):
         base, check, leaves = build_names(['hat', 'tea'])
