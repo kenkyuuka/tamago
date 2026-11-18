@@ -5,6 +5,7 @@ import pathlib
 import sys
 
 from tamago.formats.anim.pckfile import is_pck
+from tamago.formats.blackrainbow.datfile import is_advdx_dat
 from tamago.formats.dxa.dxafile import is_dxa
 from tamago.formats.livemaker.vffile import VF_MAGIC as LIVEMAKER_MAGIC
 from tamago.formats.med.medfile import is_med_header
@@ -75,6 +76,10 @@ def detect_format(path):
         # A DXA signature is encrypted with the archive's key, so it can only be
         # recognised by recovering the key and parsing the index.
         return 'dxa'
+    if fmt is None and is_advdx_dat(path):
+        # BlackRainbow ADVDX archives have no signature: recognised by a slot
+        # table that starts right after the header and points inside the file.
+        return 'blackrainbow'
     return fmt
 
 
