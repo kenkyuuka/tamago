@@ -18,6 +18,7 @@ Requires Python 3.10 or later.
 | MED    | Fudegaki Soft (DxLib) | yes | yes |
 | PCK    | ANIM (`*_wave.pck`, `psbpack.dat`) | yes | yes |
 | YPF    | YU-RIS (versions 461–500; also YSTB scripts and YCG images) | yes | yes |
+| DAT    | BlackRainbow ADVDX (`.dat`/`.pak`; also `_BMD` images) | yes | yes |
 
 ## Installation
 
@@ -63,6 +64,16 @@ tamago yuris decrypt ysbin_dir plain_dir               # YSTB scripts; the key i
 tamago yuris encrypt plain_dir ysbin_dir --key 96ac6fd3
 tamago yuris decode-ycg ycg_dir png_dir                # standalone YCG <-> PNG conversion
 tamago yuris encode-ycg png_dir ycg_dir
+```
+
+BlackRainbow ADVDX archives address their members by slot number, and many members have no name. Extraction writes `_advdx_manifest.json` next to the files, recording each member's slot and stored name and the archive's header. `create` reads it back, so an extracted archive is rebuilt with every member in its slot. Script and read-flag archives carry a game ID that the game checks; the manifest keeps it, or give it with `--game-id`:
+
+```bash
+tamago blackrainbow extract image/sj_bga.dat bga_dir --convert-bmd   # _BMD images become PNG
+tamago blackrainbow create bga_dir sj_bga.dat                         # PNGs are encoded back to _BMD
+tamago blackrainbow create spt_dir sj_spt.dat --kind script --game-id 15432 --slots 192
+tamago blackrainbow decode-bmd bmd_dir png_dir                        # standalone _BMD <-> PNG conversion
+tamago blackrainbow encode-bmd png_dir bmd_dir
 ```
 
 ### Python API
