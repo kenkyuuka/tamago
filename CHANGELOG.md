@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Fixed
+
+- `tamago.formats.psb` now exports `write`, so `psb.write(psb.PSB(...))` works alongside `psb.read`.
+
 ## 1.7.0 — 2026-11-20
 
 ### Added
