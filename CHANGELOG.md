@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+## 1.7.0 — 2026-11-20
+
 ### Added
 
 - AI6WIN `.arc` archives, the format of elf's (and Silky's) AI6WIN engine: extract and create. Archives have no signature, so tamago recognises them by their index. Extraction writes a manifest (`_ai6win_manifest.json`) recording the members' order and compression. Rebuilding from it reproduces the original archive byte for byte, because tamago compresses with the same LZSS encoder (Okumura's) as the games' packer. Without a manifest, scripts and data are compressed and media stored, as in the games' archives; `--compress` and `--no-compress` override this.
