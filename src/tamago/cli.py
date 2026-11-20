@@ -4,7 +4,10 @@ import logging
 import pathlib
 import sys
 
+from tamago.formats.advhd.arcfile import is_advhd_arc
+from tamago.formats.ai6win.arcfile import is_ai6win_arc
 from tamago.formats.anim.pckfile import is_pck
+from tamago.formats.blackcyc.packfile import is_blackcyc_pack
 from tamago.formats.blackrainbow.datfile import is_advdx_dat
 from tamago.formats.dxa.dxafile import is_dxa
 from tamago.formats.livemaker.vffile import VF_MAGIC as LIVEMAKER_MAGIC
@@ -27,7 +30,6 @@ FORMAT_MAGIC = {
 EXTENSION_FORMATS = {
     '.det': 'det',
     '.gsp': 'gsp',
-    '.arc': 'advhd',
     # RPA-1.0 has no magic: an index in .rpi, and headerless data in .rpa.
     '.rpa': 'rpa',
     '.rpi': 'rpa',
@@ -69,6 +71,17 @@ def detect_format(path):
         return 'livemaker'
     if is_med_header(header):
         return 'med'
+    if is_blackcyc_pack(path):
+        # Black Cyc packs have no signature: an index (.gtb, .vtb) that
+        # describes the data file (.gpk, .vpk) beside it identifies either one.
+        return 'blackcyc'
+    if pathlib.Path(path).suffix.lower() == '.arc':
+        # Several engines use .arc without a signature: each is recognised by
+        # an index that describes the file.
+        if is_advhd_arc(path):
+            return 'advhd'
+        if is_ai6win_arc(path):
+            return 'ai6win'
     fmt = _detect_by_extension(path)
     if fmt is None and is_pck(path):
         # ANIM packs have no signature either: recognised by an index that
