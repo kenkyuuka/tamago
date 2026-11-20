@@ -6,6 +6,7 @@ from tamago.formats.advhd.arcfile import (
     decompress_psp,
     decrypt_script,
     encrypt_script,
+    is_advhd_arc,
     is_script_file,
 )
 
@@ -18,5 +19,6 @@ __all__ = [
     'decompress_psp',
     'decrypt_script',
     'encrypt_script',
+    'is_advhd_arc',
     'is_script_file',
 ]

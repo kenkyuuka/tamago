@@ -91,6 +91,56 @@ def decompress_psp(data: bytes) -> bytes:
     return bytes(output)
 
 
+_MIN_ENTRY_SIZE = 8 + _UTF16_CHAR_SIZE * 2  # size, offset, one character, terminator
+
+
+def is_advhd_arc(path: str | os.PathLike) -> bool:
+    """Return True if the file at *path* has the structure of an AdvHD (v2) ARC archive.
+
+    The header has no signature, and ``.arc`` is shared with other engines, so
+    the whole index is checked: it must hold exactly *file_count* entries with
+    non-empty UTF-16LE names, and every member must lie inside the file.
+    """
+    try:
+        with open(path, 'rb') as fp:
+            file_size = os.fstat(fp.fileno()).st_size
+            header = fp.read(HEADER_SIZE)
+            if len(header) < HEADER_SIZE:
+                return False
+            file_count, index_size = struct.unpack('<II', header)
+            base_offset = HEADER_SIZE + index_size
+            if not file_count or base_offset > file_size or file_count * _MIN_ENTRY_SIZE > index_size:
+                return False
+            index = fp.read(index_size)
+    except OSError:
+        return False
+
+    pos = 0
+    for _ in range(file_count):
+        if pos + 8 > index_size:
+            return False
+        size, offset = struct.unpack_from('<II', index, pos)
+        pos += 8
+        end = pos
+        while True:
+            end = index.find(b'\0\0', end)
+            if end < 0:
+                return False
+            if (end - pos) % _UTF16_CHAR_SIZE == 0:
+                break
+            end += 1
+        if end == pos:
+            return False
+        try:
+            index[pos:end].decode('utf-16-le')
+        except UnicodeDecodeError:
+            return False
+        if base_offset + offset + size > file_size:
+            return False
+        pos = end + _UTF16_CHAR_SIZE
+    return pos == index_size
+
+
 class ARCInfo:
     """Metadata for a single entry in an ARC archive."""
 

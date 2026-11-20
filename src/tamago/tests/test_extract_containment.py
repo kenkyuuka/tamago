@@ -3,6 +3,7 @@
 import pytest
 
 from tamago.formats.advhd.arcfile import ARCFile
+from tamago.formats.ai6win import ARCFile as AI6ARCFile
 from tamago.formats.anim import PCKFile
 from tamago.formats.det.detfile import DETFile
 from tamago.formats.dxa import DXAFile
@@ -14,6 +15,7 @@ from tamago.formats.xp3 import XP3File
 
 FORMATS = [
     pytest.param(ARCFile, 'test.arc', id='arc'),
+    pytest.param(AI6ARCFile, 'test.arc', id='ai6win'),
     pytest.param(PCKFile, 'test.pck', id='anim'),
     pytest.param(DETFile, 'test.det', id='det'),
     pytest.param(DXAFile, 'test.dxa', id='dxa'),
