@@ -21,6 +21,7 @@ Requires Python 3.10 or later.
 | DAT    | BlackRainbow ADVDX (`.dat`/`.pak`; also `_BMD` images) | yes | yes |
 | PSB    | E-mote models (versions 2–4; e.g. from ANIM's `psbpack.dat`) | yes | yes |
 | ARC    | AI6WIN (elf, Silky's) | yes | yes |
+| GPK/VPK | Black Cyc (also Cyc No-nos, CYCLET) | yes | yes |
 
 ## Installation
 
@@ -83,6 +84,13 @@ AI6WIN archives (`mes.arc`, `Data.arc`, `Voice.arc`, ...) are extracted with a m
 ```bash
 tamago extract mes.arc mes_dir
 tamago create --format ai6win mes_dir mes.arc
+```
+
+Black Cyc packs come in pairs: an index and a data file with the same name, `.gtb` + `.gpk` for `.dwq` images and `.vtb` + `.vpk` for `.vaw` voices. Give either file to `extract`. `create` writes both, and rebuilding an extracted pack reproduces the original files byte for byte:
+
+```bash
+tamago extract dwq/bg0.gpk bg0_dir
+tamago create --format blackcyc bg0_dir dwq/bg0.gpk     # writes bg0.gpk and bg0.gtb
 ```
 
 E-mote PSB files are decompiled to `psb.json` (the value tree), the resource chunks (`resources/0.bin`, ...) and the texture atlases as PNG, and compiled back from the JSON and chunks. The encryption key is recovered from version 3 and 4 files; ANIM's is built in, and others can be given with `--key`. The tree in `psb.json` writes single-precision floats as plain numbers, and resource references and other values JSON lacks as one-key objects (`{"$resource": 0}`):
