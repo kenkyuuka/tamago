@@ -20,6 +20,7 @@ Requires Python 3.10 or later.
 | YPF    | YU-RIS (versions 461–500; also YSTB scripts and YCG images) | yes | yes |
 | DAT    | BlackRainbow ADVDX (`.dat`/`.pak`; also `_BMD` images) | yes | yes |
 | PSB    | E-mote models (versions 2–4; e.g. from ANIM's `psbpack.dat`) | yes | yes |
+| ARC    | AI6WIN (elf, Silky's) | yes | yes |
 
 ## Installation
 
@@ -75,6 +76,13 @@ tamago blackrainbow create bga_dir sj_bga.dat                         # PNGs are
 tamago blackrainbow create spt_dir sj_spt.dat --kind script --game-id 15432 --slots 192
 tamago blackrainbow decode-bmd bmd_dir png_dir                        # standalone _BMD <-> PNG conversion
 tamago blackrainbow encode-bmd png_dir bmd_dir
+```
+
+AI6WIN archives (`mes.arc`, `Data.arc`, `Voice.arc`, ...) are extracted with a manifest, `_ai6win_manifest.json`, recording the order of the members and which ones are compressed, so `create` rebuilds the original archive byte for byte. New files are added after the listed ones, compressed if they are scripts or data (`.mes`, `.lib`, `.area`, `.ax`, `.bin`, `.mov`) as in the games' own archives; `--compress` or `--no-compress` overrides this for every member:
+
+```bash
+tamago extract mes.arc mes_dir
+tamago create --format ai6win mes_dir mes.arc
 ```
 
 E-mote PSB files are decompiled to `psb.json` (the value tree), the resource chunks (`resources/0.bin`, ...) and the texture atlases as PNG, and compiled back from the JSON and chunks. The encryption key is recovered from version 3 and 4 files; ANIM's is built in, and others can be given with `--key`. The tree in `psb.json` writes single-precision floats as plain numbers, and resource references and other values JSON lacks as one-key objects (`{"$resource": 0}`):
