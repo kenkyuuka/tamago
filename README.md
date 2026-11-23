@@ -20,7 +20,7 @@ Requires Python 3.10 or later.
 | YPF    | YU-RIS (versions 461–500; also YSTB scripts and YCG images) | yes | yes |
 | DAT    | BlackRainbow ADVDX (`.dat`/`.pak`; also `_BMD` images) | yes | yes |
 | PSB    | E-mote models (versions 2–4; e.g. from ANIM's `psbpack.dat`) | yes | yes |
-| ARC    | AI6WIN (elf, Silky's) | yes | yes |
+| ARC    | AI6WIN (elf, Silky's; also AKB images) | yes | yes |
 | GPK/VPK | Black Cyc (also Cyc No-nos, CYCLET) | yes | yes |
 | HE0–HE4 | SCUMM, Humongous Entertainment (Freddi Fish 1–5) | yes | no |
 
@@ -85,6 +85,16 @@ AI6WIN archives (`mes.arc`, `Data.arc`, `Voice.arc`, ...) are extracted with a m
 ```bash
 tamago extract mes.arc mes_dir
 tamago create --format ai6win mes_dir mes.arc
+```
+
+Images in `Layer.arc` are AKB files. With `--convert-akb` they are extracted as PNG, and `create` encodes PNGs back to AKB. Each PNG keeps the AKB's background colour and stored rectangle in a text chunk, so unedited images, and so the whole archive, come back byte for byte. Encoding is slow (several seconds for a full-screen image). Incremental `AKB+` images, drawn over another image, are left as they are:
+
+```bash
+tamago ai6win extract --convert-akb Layer.arc layer_dir   # AKB images become PNG
+tamago create --format ai6win layer_dir Layer.arc         # PNGs are encoded back to AKB
+
+tamago ai6win decode-akb akb_dir png_dir                  # standalone AKB <-> PNG conversion
+tamago ai6win encode-akb png_dir akb_dir
 ```
 
 Black Cyc packs come in pairs: an index and a data file with the same name, `.gtb` + `.gpk` for `.dwq` images and `.vtb` + `.vpk` for `.vaw` voices. Give either file to `extract`. `create` writes both, and rebuilding an extracted pack reproduces the original files byte for byte:
