@@ -22,6 +22,7 @@ Requires Python 3.10 or later.
 | PSB    | E-mote models (versions 2–4; e.g. from ANIM's `psbpack.dat`) | yes | yes |
 | ARC    | AI6WIN (elf, Silky's) | yes | yes |
 | GPK/VPK | Black Cyc (also Cyc No-nos, CYCLET) | yes | yes |
+| HE0–HE4 | SCUMM, Humongous Entertainment (Freddi Fish 1–5) | yes | no |
 
 ## Installation
 
@@ -91,6 +92,14 @@ Black Cyc packs come in pairs: an index and a data file with the same name, `.gt
 ```bash
 tamago extract dwq/bg0.gpk bg0_dir
 tamago create --format blackcyc bg0_dir dwq/bg0.gpk     # writes bg0.gpk and bg0.gtb
+```
+
+Humongous Entertainment's SCUMM games (Freddi Fish and its siblings) are extracted one file at a time: the index (`.he0`), the room data (`.he1`, or `.(A)` in later games), speech (`.he2`) and music (`.he4`). Sounds, speech and music become WAV files, and room backgrounds, object images and sprites become PNG. Costumes (characters and other animations) are written as stored, with each of their pictures ("cels") as a PNG in a folder beside them; tamago does not assemble cels into animations. Where a costume names its animation sequences (Freddi Fish 2 and 3), the folder takes the first name (`costume-0003-freddi_swims_in/`). Scripts and other blocks are written as stored. A room data file uses the `.he0` beside it to name resources by number (`room-012/sound-0345.wav`); speech lines are named by their offset in `.he2`, which is how scripts refer to them. `--no-convert` writes every block as stored instead. SCUMM files cannot be created:
+
+```bash
+tamago extract Freddi.he1 freddi_rooms      # room-NNN/background.png, objects/*.png, sound-*.wav, costume-*/cel-*.png, ...
+tamago extract Freddi.he2 freddi_speech     # talk-<offset>.wav
+tamago scumm extract --no-convert Freddi.he4 freddi_music
 ```
 
 E-mote PSB files are decompiled to `psb.json` (the value tree), the resource chunks (`resources/0.bin`, ...) and the texture atlases as PNG, and compiled back from the JSON and chunks. The encryption key is recovered from version 3 and 4 files; ANIM's is built in, and others can be given with `--key`. The tree in `psb.json` writes single-precision floats as plain numbers, and resource references and other values JSON lacks as one-key objects (`{"$resource": 0}`):
