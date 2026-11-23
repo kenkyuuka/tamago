@@ -75,3 +75,36 @@ class TestDecompress:
     def test_truncated_stream(self):
         with pytest.raises(ValueError):
             lzss.decompress(QUEEN_LZSS[:-2], len(QUEEN))
+
+
+def _accel_samples():
+    rng = random.Random(1951)  # noqa: S311 — deterministic seed for test reproducibility
+    samples = {
+        'empty': b'',
+        'one': b'A',
+        'abab': b'abab',
+        'zeros_tea': ZEROS_TEA,
+        'tea_tea_tea': TEA_TEA_TEA,
+        'queen': QUEEN,
+        'text': _ALICE_TEXT,
+        'zeros': bytes(10000),
+        'ones': b'\xff' * 5000,
+        'random': bytes(rng.randrange(256) for _ in range(6000)),
+        'low_entropy': bytes(rng.randrange(4) for _ in range(20000)),
+        'tea_party': b''.join(b'Tea' + bytes([rng.randrange(3)]) for _ in range(3000)),
+    }
+    for size in (17, 18, 19, 35, 36, 37):
+        samples[f'short_{size}'] = (b'Drink me! ' * 4)[:size]
+    return samples
+
+
+@pytest.mark.unit
+@pytest.mark.skipif(lzss._lzss_accel is None, reason="C accelerator not built")
+class TestAccelerator:
+    @pytest.mark.parametrize('name', sorted(_accel_samples()))
+    def test_compress_matches_fallback(self, name):
+        data = _accel_samples()[name]
+        assert lzss._lzss_accel.compress_okumura(data) == lzss.compress_py(data)
+
+    def test_compress_accepts_memoryview(self):
+        assert lzss._lzss_accel.compress_okumura(memoryview(QUEEN)) == QUEEN_LZSS

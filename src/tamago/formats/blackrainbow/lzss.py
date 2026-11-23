@@ -4,7 +4,16 @@ This is Okumura's classic LZSS: a 4 KiB ring buffer that starts zero-filled
 with its write position at 0xFEE, flag bytes read LSB first (1 = literal,
 0 = reference), and two-byte references holding a 12-bit absolute ring
 position and a 4-bit length (3 to 18 bytes).
+
+The pure-Python functions are the reference; a C accelerator (``_lzss_accel``)
+replaces them when it was built.  AI6WIN uses the same decoder, and the
+accelerator also carries its encoder.
 """
+
+try:
+    from tamago.formats.blackrainbow import _lzss_accel  # type: ignore[attr-defined]
+except ImportError:  # pragma: no cover - depends on the build
+    _lzss_accel = None  # type: ignore[assignment]
 
 RING_SIZE = 0x1000
 RING_MASK = RING_SIZE - 1
@@ -13,7 +22,7 @@ MIN_MATCH = 3
 MAX_MATCH = 18
 
 
-def decompress(data: bytes | bytearray | memoryview, size: int) -> bytes:
+def decompress_py(data: bytes | bytearray | memoryview, size: int) -> bytes:
     """Decompress the LZSS stream *data* to *size* bytes.
 
     Raises ValueError if the stream ends before *size* bytes are produced.
@@ -86,7 +95,7 @@ def _longest_match(data: bytes, pos: int, end: int) -> tuple[int, int]:
     return pos - best_at, best_len
 
 
-def compress(data: bytes | bytearray | memoryview) -> bytes:
+def compress_py(data: bytes | bytearray | memoryview) -> bytes:
     """Compress *data* into an LZSS stream that :func:`decompress` restores."""
     src = bytes(data)
     end = len(src)
@@ -111,3 +120,25 @@ def compress(data: bytes | bytearray | memoryview) -> bytes:
                 pos += 1
         out[flag_at] = flags
     return bytes(out)
+
+
+def decompress(data: bytes | bytearray | memoryview, size: int) -> bytes:
+    """Decompress the LZSS stream *data* to *size* bytes.
+
+    Raises ValueError if the stream ends before *size* bytes are produced.
+    Anything in the stream after that point is ignored.
+    """
+    if _lzss_accel is not None:
+        return _lzss_accel.decompress(data, size)
+    return decompress_py(data, size)
+
+
+def compress(data: bytes | bytearray | memoryview) -> bytes:
+    """Compress *data* into an LZSS stream that :func:`decompress` restores.
+
+    The encoder is greedy: at each position it takes the longest match (3 to
+    18 bytes, up to 4096 bytes back), the nearest among equally long ones.
+    """
+    if _lzss_accel is not None:
+        return _lzss_accel.compress_greedy(data)
+    return compress_py(data)
