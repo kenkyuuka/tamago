@@ -10,6 +10,8 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+    env:
+      TAMAGO_REQUIRE_ACCEL: "1"
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
@@ -22,9 +24,30 @@ jobs:
       - name: Check style
         run: hatch run lint:style
 
-  build:
+  # Platform wheels with the C accelerators (configured under
+  # [tool.cibuildwheel] in pyproject.toml).
+  wheels:
+    needs: test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pypa/cibuildwheel@v4.3.5
+        with:
+          output-dir: dist
+      - uses: actions/upload-artifact@v5
+        with:
+          name: dist-wheels-${{ matrix.os }}
+          path: dist/
+
+  # The sdist, plus a pure-Python wheel for platforms without a built one.
+  sdist:
     needs: test
     runs-on: ubuntu-latest
+    env:
+      TAMAGO_NO_ACCEL: "1"
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
@@ -36,11 +59,11 @@ jobs:
         run: hatch build
       - uses: actions/upload-artifact@v5
         with:
-          name: dist
+          name: dist-sdist
           path: dist/
 
   publish:
-    needs: build
+    needs: [wheels, sdist]
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
@@ -48,6 +71,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v5
         with:
-          name: dist
+          pattern: dist-*
+          merge-multiple: true
           path: dist/
       - uses: pypa/gh-action-pypi-publish@release/v1

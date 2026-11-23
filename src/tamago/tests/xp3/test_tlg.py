@@ -4,7 +4,7 @@ import tempfile
 
 import pytest
 
-from tamago.formats.xp3 import XP3File
+from tamago.formats.xp3 import XP3File, tlg
 from tamago.formats.xp3.tlg import TLG0_MAGIC, TLG5_MAGIC, TLG6_MAGIC, open_tlg
 
 SAMPLES = os.path.join(os.path.dirname(__file__), 'samples')
@@ -230,3 +230,19 @@ class TestExtractConvertTlg:
                 png_img = Image.open(os.path.join(tmpdir, 'cheshire.png'))
                 direct_img = open_tlg(os.path.join(SAMPLES, 'cheshire_4x4.tlg'))
                 assert png_img.tobytes() == direct_img.tobytes()
+
+
+@pytest.mark.unit
+@pytest.mark.skipif(tlg._tlg_accel is None, reason="C accelerator not built")
+class TestAcceleratorMatchesFallback:
+    """The C hot loops must decode exactly like the pure-Python reference."""
+
+    PURE = ('_lzss_decompress', '_decode_golomb_channel', '_decode_scanline', '_correlate_channels')
+
+    @pytest.mark.parametrize('name', sorted(n for n in os.listdir(SAMPLES) if n.endswith('.tlg')))
+    def test_sample(self, name, monkeypatch):
+        path = os.path.join(SAMPLES, name)
+        accelerated = open_tlg(path).tobytes()
+        for func in self.PURE:
+            monkeypatch.setattr(tlg, func, getattr(tlg, f'{func}_py'))
+        assert open_tlg(path).tobytes() == accelerated

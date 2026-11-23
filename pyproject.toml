@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "setuptools>=70"]
 build-backend = "hatchling.build"
 
 [project]
@@ -66,6 +66,20 @@ pinpoint = "tamago.formats.xp3.encryption.pinpoint:PinPointEncryption"
 packages = ["src/tamago"]
 
 [tool.hatch.build.hooks.custom]
+
+[tool.cibuildwheel]
+# cp310 needs its own build; the cp311 abi3 wheel serves 3.11 and later.
+build = "cp310-* cp311-*"
+environment = { TAMAGO_REQUIRE_ACCEL = "1" }
+test-requires = ["pytest"]
+# --pyargs runs the tests shipped inside the installed wheel, not the source tree.
+test-command = "pytest -q --pyargs tamago.tests.test_accelerators tamago.tests.xp3.test_tlg tamago.tests.yuris.test_hashing"
+
+[tool.cibuildwheel.macos]
+archs = ["x86_64", "arm64"]
+
+[tool.cibuildwheel.windows]
+archs = ["AMD64"]
 
 [tool.hatch.version]
 path = "src/tamago/__about__.py"
