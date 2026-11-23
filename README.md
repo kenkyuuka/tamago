@@ -87,7 +87,7 @@ tamago extract mes.arc mes_dir
 tamago create --format ai6win mes_dir mes.arc
 ```
 
-Images in `Layer.arc` are AKB files. With `--convert-akb` they are extracted as PNG, and `create` encodes PNGs back to AKB. Each PNG keeps the AKB's background colour and stored rectangle in a text chunk, so unedited images, and so the whole archive, come back byte for byte. Encoding is slow (several seconds for a full-screen image). Incremental `AKB+` images, drawn over another image, are left as they are:
+Images in `Layer.arc` are AKB files. With `--convert-akb` they are extracted as PNG, and `create` encodes PNGs back to AKB. Each PNG keeps the AKB's background colour and stored rectangle in a text chunk, so unedited images, and so the whole archive, come back byte for byte. Encoding a full-screen image takes well under a second with the C accelerator, several seconds without it. Incremental `AKB+` images, drawn over another image, are left as they are:
 
 ```bash
 tamago ai6win extract --convert-akb Layer.arc layer_dir   # AKB images become PNG

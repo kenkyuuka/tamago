@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+## 1.8.0 — 2026-11-23
+
 ### Added
 
 - AKB images, from the `Layer.arc` archives of AI6WIN games: decode to PNG and encode back. `tamago ai6win extract --convert-akb` writes images as PNG, and `create` encodes PNGs back to AKB; `decode-akb` and `encode-akb` convert files and directories on their own. Each PNG records the image's background colour and stored rectangle in a `tamago:akb` text chunk, so an unedited image re-encodes byte for byte, as does a whole `Layer.arc` rebuilt from PNGs. 32-bit images always keep their alpha channel. Incremental `AKB+` images (drawn over a base image; none seen in the tested games) are extracted unconverted. Encoding a full-screen image takes well under a second with the C accelerator (see below), several seconds without it.
