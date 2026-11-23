@@ -14,6 +14,7 @@ from tamago.formats.livemaker.vffile import VF_MAGIC as LIVEMAKER_MAGIC
 from tamago.formats.med.medfile import is_med_header
 from tamago.formats.psb.psbfile import MAGIC as PSB_MAGIC
 from tamago.formats.rpa.rpafile import RPA_MAGIC
+from tamago.formats.scumm.hefile import is_he_file
 from tamago.formats.xp3.models import XP3_MAGIC
 from tamago.formats.yuris.ypf import YPF_MAGIC
 
@@ -71,6 +72,9 @@ def detect_format(path):
         return 'livemaker'
     if is_med_header(header):
         return 'med'
+    if is_he_file(path):
+        # SCUMM files start with a block tag, often XORed with 0x69.
+        return 'scumm'
     if is_blackcyc_pack(path):
         # Black Cyc packs have no signature: an index (.gtb, .vtb) that
         # describes the data file (.gpk, .vpk) beside it identifies either one.

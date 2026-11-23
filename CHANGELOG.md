@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Added
+
+- SCUMM resource files of Humongous Entertainment games (tested with Freddi Fish 1–5): extract only. Each file of a game is read on its own: the index (`.he0`), room data (`.he1` or `.(A)`), speech (`.he2`) and music (`.he4`), with or without the engine's XOR obfuscation. Sounds, speech and music are converted to WAV; room backgrounds, object images and WIZ sprites to PNG; costumes are written as stored, with each of their cels (the pictures animations are made of) as a PNG, in a folder named after the costume's first animation sequence where the game names them; other blocks are written as stored. Room resources are named by the numbers in the `.he0` beside the data file (`--no-index` names them by position). `--no-convert` writes every block as stored.
+
 ### Fixed
 
 - `tamago.formats.psb` now exports `write`, so `psb.write(psb.PSB(...))` works alongside `psb.read`.
