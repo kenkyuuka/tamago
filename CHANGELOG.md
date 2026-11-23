@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- tamago starts on Python 3.10 again. It needs `tomli` to read TOML there, but `tomli` wasn't listed as a dependency, so a clean install crashed on startup with `ModuleNotFoundError: No module named 'tomli'` (#42).
 - `tamago.formats.psb` now exports `write`, so `psb.write(psb.PSB(...))` works alongside `psb.read`.
 - The C accelerators for TLG image decoding and YU-RIS hashing now reach everyone installing from PyPI. Previously the only wheel published was built for Python 3.12 on Linux x86_64 but labelled for every platform, so all other installs silently fell back to pure Python. That fallback decodes a 1920×1080 TLG6 image about 100 times slower (roughly 6 s instead of 55 ms). Releases now include wheels for Linux (x86_64 and aarch64, glibc and musl), macOS (Intel and Apple silicon) and Windows (x86_64). A single wheel per platform serves Python 3.11 and later, with a separate one for 3.10; other platforms get a pure-Python wheel. Building from source warns when the accelerators can't be compiled, and setting `TAMAGO_REQUIRE_ACCEL=1` makes that an error.
 

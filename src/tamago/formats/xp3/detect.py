@@ -20,10 +20,7 @@ from pathlib import Path
 if sys.version_info >= (3, 11):
     import tomllib
 else:
-    try:
-        import tomllib
-    except ImportError:
-        import tomli as tomllib
+    import tomli as tomllib
 
 from .encryption import get_encryption_schemes
 from .encryption.hash_xor import HashXorEncryption
