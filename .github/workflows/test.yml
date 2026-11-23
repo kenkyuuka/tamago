@@ -12,6 +12,15 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        accel: ["require"]
+        include:
+          # Exercise the pure-Python fallbacks the accelerators replace.
+          - python-version: "3.14"
+            accel: "none"
+    name: test (${{ matrix.python-version }}, accel=${{ matrix.accel }})
+    env:
+      TAMAGO_REQUIRE_ACCEL: ${{ matrix.accel == 'require' && '1' || '' }}
+      TAMAGO_NO_ACCEL: ${{ matrix.accel == 'none' && '1' || '' }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
