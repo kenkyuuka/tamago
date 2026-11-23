@@ -27,6 +27,7 @@ classifiers = [
 dependencies = [
   "construct>=2.10",
   "Pillow>=9.0",
+  "tomli>=1.1; python_version < '3.11'",
 ]
 
 [project.urls]
