@@ -32,6 +32,7 @@ from hatchling.builders.hooks.plugin.interface import BuildHookInterface
 ACCELERATORS = [
     ('xp3', '_tlg_accel'),
     ('yuris', '_murmur_accel'),
+    ('blackrainbow', '_lzss_accel'),
 ]
 
 LIMITED_API = (3, 11)

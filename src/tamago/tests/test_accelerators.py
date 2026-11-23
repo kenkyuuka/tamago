@@ -14,6 +14,7 @@ import pytest
 ACCELERATORS = [
     'tamago.formats.xp3._tlg_accel',
     'tamago.formats.yuris._murmur_accel',
+    'tamago.formats.blackrainbow._lzss_accel',
 ]
 
 REQUIRED = os.environ.get('TAMAGO_REQUIRE_ACCEL', '') not in ('', '0')

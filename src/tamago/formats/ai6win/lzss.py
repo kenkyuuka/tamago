@@ -16,7 +16,7 @@ against stale look-ahead bytes and then clipped, and matches of two bytes or
 fewer are sent as literals.
 """
 
-from tamago.formats.blackrainbow.lzss import decompress
+from tamago.formats.blackrainbow.lzss import _lzss_accel, decompress
 
 __all__ = ['compress', 'decompress']
 
@@ -28,7 +28,18 @@ _MASK = _N - 1
 
 
 def compress(data: bytes | bytearray | memoryview) -> bytes:
-    """Compress *data* exactly as Okumura's LZSS encoder does."""
+    """Compress *data* exactly as Okumura's LZSS encoder does.
+
+    Uses the C accelerator when it was built; :func:`compress_py` is the
+    reference.
+    """
+    if _lzss_accel is not None:
+        return _lzss_accel.compress_okumura(data)
+    return compress_py(data)
+
+
+def compress_py(data: bytes | bytearray | memoryview) -> bytes:
+    """Compress *data* exactly as Okumura's LZSS encoder does (pure Python)."""
     src = bytes(data)
     end = len(src)
     if not end:
