@@ -1,6 +1,6 @@
 import logging
 
-from tamago.formats.ai6win import lzss
+from tamago.formats.ai6win import akb, lzss
 from tamago.formats.ai6win.arcfile import (
     COMPRESSED_EXTENSIONS,
     MANIFEST_NAME,
@@ -20,6 +20,7 @@ __all__ = [
     'MANIFEST_NAME',
     'ARCFile',
     'ARCInfo',
+    'akb',
     'decode_name',
     'encode_name',
     'is_ai6win_arc',

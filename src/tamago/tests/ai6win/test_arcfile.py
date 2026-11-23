@@ -4,9 +4,14 @@ import json
 import struct
 
 import pytest
+from PIL import Image, PngImagePlugin
 
 from tamago.formats.ai6win import MANIFEST_NAME, ARCFile, decode_name, encode_name, is_ai6win_arc
+from tamago.formats.ai6win.akb import PNG_TEXT_KEY, akb_to_png, decode_akb, encode_akb, read_header
 from tamago.tests.ai6win.samples import (
+    AKB_EMPTY,
+    AKB_RGB_CROPPED,
+    AKB_RGBA,
     ARCHIVE,
     CONTENTS,
     MEMBERS,
@@ -361,3 +366,136 @@ class TestCreate:
     def test_invalid_mode(self, tmp_path):
         with pytest.raises(ValueError):
             ARCFile(tmp_path / 'x.arc', mode='a')
+
+
+def _canonical(akb: bytes) -> bytes:
+    """*akb* re-encoded with Okumura's LZSS, as the games' packer would have stored it."""
+    header = read_header(akb)
+    return encode_akb(decode_akb(akb), header.background, (header.left, header.top, header.right, header.bottom))
+
+
+@pytest.fixture
+def layer(tmp_path):
+    """An image archive: two AKBs, an incremental AKB+ and a script."""
+    members = [
+        (b'ev/alice01.akb', _canonical(AKB_RGB_CROPPED)),
+        (b'kuro.akb', AKB_EMPTY),
+        (b'tea_party.akb', b'AKB+' + AKB_RGBA[4:]),
+        (b'start.mes', QUEEN),
+    ]
+    path = tmp_path / 'Layer.arc'
+    path.write_bytes(build_arc([(name, data, len(data)) for name, data in members]))
+    return path
+
+
+@pytest.mark.integration
+class TestAKBConversion:
+    def test_extracts_images_as_png(self, layer, tmp_path):
+        out = tmp_path / 'out'
+        with ARCFile(layer) as arc:
+            arc.extract_all(out, convert_akb=True)
+        assert sorted(p.relative_to(out).as_posix() for p in out.rglob('*') if p.is_file()) == [
+            MANIFEST_NAME,
+            'ev/alice01.png',
+            'kuro.png',
+            'start.mes',
+            'tea_party.akb',
+        ]
+        with Image.open(out / 'ev' / 'alice01.png') as image:
+            assert image.tobytes() == decode_akb(AKB_RGB_CROPPED).tobytes()
+        manifest = json.loads((out / MANIFEST_NAME).read_text(encoding='utf-8'))
+        assert manifest['members'] == [
+            {'name': 'ev/alice01.akb', 'compressed': False, 'file': 'ev/alice01.png'},
+            {'name': 'kuro.akb', 'compressed': False, 'file': 'kuro.png'},
+            {'name': 'tea_party.akb', 'compressed': False},
+            {'name': 'start.mes', 'compressed': False},
+        ]
+
+    def test_incremental_image_left_unconverted(self, layer, tmp_path, caplog):
+        with ARCFile(layer) as arc:
+            arc.extract_all(tmp_path / 'out', convert_akb=True)
+        assert 'tea_party.akb' in caplog.text
+        assert 'AKB+' in caplog.text
+
+    def test_rebuild_is_byte_identical(self, layer, tmp_path):
+        out = tmp_path / 'out'
+        with ARCFile(layer) as arc:
+            arc.extract_all(out, convert_akb=True)
+        rebuilt = tmp_path / 'rebuilt.arc'
+        with ARCFile(rebuilt, mode='w') as arc:
+            arc.write_all(out)
+        assert rebuilt.read_bytes() == layer.read_bytes()
+
+    def test_edited_png_is_encoded(self, layer, tmp_path):
+        out = tmp_path / 'out'
+        with ARCFile(layer) as arc:
+            arc.extract_all(out, convert_akb=True)
+        Image.new('RGB', (4, 3), (0x4F, 0x86, 0xC6)).save(out / 'kuro.png')
+        rebuilt = tmp_path / 'rebuilt.arc'
+        with ARCFile(rebuilt, mode='w') as arc:
+            arc.write_all(out)
+        with ARCFile(rebuilt) as arc:
+            assert decode_akb(arc.read('kuro.akb')).getcolors() == [(12, (0x4F, 0x86, 0xC6))]
+
+    def test_png_name_collision(self, tmp_path):
+        akb = _canonical(AKB_RGBA)
+        path = tmp_path / 'Layer.arc'
+        path.write_bytes(build_arc([(b'tea.akb', akb, len(akb)), (b'tea.png', OGG, len(OGG))]))
+        out = tmp_path / 'out'
+        with ARCFile(path) as arc:
+            arc.extract_all(out, convert_akb=True)
+        assert (out / 'tea.png').read_bytes() == OGG
+        assert (out / 'tea.akb.png').is_file()
+        rebuilt = tmp_path / 'rebuilt.arc'
+        with ARCFile(rebuilt, mode='w') as arc:
+            arc.write_all(out)
+        assert rebuilt.read_bytes() == path.read_bytes()
+
+    def test_extract_single_member(self, layer, tmp_path):
+        with ARCFile(layer) as arc:
+            written = arc.extract('kuro.akb', tmp_path / 'kuro.akb', convert_akb=True)
+            assert written == str(tmp_path / 'kuro.png')
+            assert arc.extract('start.mes', tmp_path / 'start.mes', convert_akb=True) == str(tmp_path / 'start.mes')
+        with Image.open(written) as image:
+            assert image.size == (4, 3)
+
+    def test_without_conversion_images_stay_akb(self, layer, tmp_path):
+        out = tmp_path / 'out'
+        with ARCFile(layer) as arc:
+            arc.extract_all(out)
+        assert (out / 'kuro.akb').read_bytes() == AKB_EMPTY
+
+    def test_new_png_becomes_akb_member(self, tmp_path):
+        src = tmp_path / 'src'
+        _populate(src, {'bg/garden.png': akb_to_png(AKB_RGBA), 'start.mes': QUEEN})
+        path = tmp_path / 'new.arc'
+        with ARCFile(path, mode='w') as arc:
+            arc.write_all(src)
+        with ARCFile(path) as arc:
+            assert arc.namelist() == ['bg/garden.akb', 'start.mes']
+            assert not arc.getinfo('bg/garden.akb').compressed
+            assert decode_akb(arc.read('bg/garden.akb')).tobytes() == decode_akb(AKB_RGBA).tobytes()
+
+    def test_explicit_png_name_is_stored_as_is(self, tmp_path):
+        png = akb_to_png(AKB_RGBA)
+        (tmp_path / 'cat.png').write_bytes(png)
+        path = tmp_path / 'new.arc'
+        with ARCFile(path, mode='w') as arc:
+            arc.write(tmp_path / 'cat.png', arcname='cat.png')
+        with ARCFile(path) as arc:
+            assert arc.read('cat.png') == png
+
+    def test_bad_png_reports_file(self, tmp_path):
+        info = PngImagePlugin.PngInfo()
+        info.add_text(PNG_TEXT_KEY, 'not json')
+        Image.new('RGB', (1, 1)).save(tmp_path / 'hatter.png', pnginfo=info)
+        with pytest.raises(ValueError, match=r'hatter\.png'), ARCFile(tmp_path / 'new.arc', mode='w') as arc:
+            arc.write(tmp_path / 'hatter.png')
+
+    def test_manifest_file_must_be_string(self, tmp_path):
+        src = tmp_path / 'src'
+        _populate(src, {'kuro.png': b''})
+        manifest = {'format': 'ai6win', 'members': [{'name': 'kuro.akb', 'compressed': False, 'file': 3}]}
+        (src / MANIFEST_NAME).write_text(json.dumps(manifest), encoding='utf-8')
+        with ARCFile(tmp_path / 'new.arc', mode='w') as arc, pytest.raises(ValueError, match='manifest'):
+            arc.write_all(src)

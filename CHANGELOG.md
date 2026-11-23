@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- AKB images, from the `Layer.arc` archives of AI6WIN games: decode to PNG and encode back. `tamago ai6win extract --convert-akb` writes images as PNG, and `create` encodes PNGs back to AKB; `decode-akb` and `encode-akb` convert files and directories on their own. Each PNG records the image's background colour and stored rectangle in a `tamago:akb` text chunk, so an unedited image re-encodes byte for byte, as does a whole `Layer.arc` rebuilt from PNGs. 32-bit images always keep their alpha channel. Incremental `AKB+` images (drawn over a base image; none seen in the tested games) are extracted unconverted. Encoding uses the pure-Python LZSS encoder and takes several seconds per full-screen image.
 - SCUMM resource files of Humongous Entertainment games (tested with Freddi Fish 1–5): extract only. Each file of a game is read on its own: the index (`.he0`), room data (`.he1` or `.(A)`), speech (`.he2`) and music (`.he4`), with or without the engine's XOR obfuscation. Sounds, speech and music are converted to WAV; room backgrounds, object images and WIZ sprites to PNG; costumes are written as stored, with each of their cels (the pictures animations are made of) as a PNG, in a folder named after the costume's first animation sequence where the game names them; other blocks are written as stored. Room resources are named by the numbers in the `.he0` beside the data file (`--no-index` names them by position). `--no-convert` writes every block as stored.
 
 ### Fixed

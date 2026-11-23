@@ -51,3 +51,71 @@ CONTENTS = {
     'backlog.area': TEA_TEA_TEA,
     '01.WAV': WAV,
 }
+
+
+# -- AKB images ---------------------------------------------------------------
+
+
+def literal_lzss(data: bytes) -> bytes:
+    """An Okumura LZSS stream that sends every byte of *data* as a literal."""
+    out = bytearray()
+    for i in range(0, len(data), 8):
+        chunk = data[i : i + 8]
+        out.append((1 << len(chunk)) - 1)
+        out += chunk
+    return bytes(out)
+
+
+def akb_filter(rows: list[bytes], pixel_size: int) -> bytes:
+    """Delta-filter *rows* (top first) the slow, obvious way, returning them bottom first."""
+    out = []
+    for y, row in enumerate(rows):
+        if y == 0:
+            filtered = bytes(row[:pixel_size]) + bytes(
+                (row[i] - row[i - pixel_size]) & 0xFF for i in range(pixel_size, len(row))
+            )
+        else:
+            filtered = bytes((a - b) & 0xFF for a, b in zip(row, rows[y - 1], strict=True))
+        out.append(filtered)
+    return b''.join(reversed(out))
+
+
+def build_akb(
+    width: int,
+    height: int,
+    flags: int,
+    background: bytes,
+    rect: tuple[int, int, int, int],
+    rows: list[bytes],
+    magic: bytes = b'AKB ',
+) -> bytes:
+    """Build an AKB file storing *rows* (raw BGR/BGRA, top first) for *rect*."""
+    pixel_size = 3 if flags & 0x40000000 else 4
+    header = magic + struct.pack('<HHI', width, height, flags) + background + struct.pack('<4i', *rect)
+    return header + (literal_lzss(akb_filter(rows, pixel_size)) if rows else b'')
+
+
+# Alice's dress, apron, hair and the Cheshire Cat, as (R, G, B, A).
+BLUE = (0x4F, 0x86, 0xC6, 0xFF)
+WHITE = (0xFA, 0xFA, 0xF0, 0xFF)
+GOLD = (0xF2, 0xC1, 0x4E, 0x80)
+CHESHIRE = (0xB0, 0x4C, 0xA8, 0x00)
+
+# A 3x2 picture: rows differ so that a flipped or mis-filtered decode shows.
+PICTURE = [[BLUE, WHITE, GOLD], [CHESHIRE, BLUE, WHITE]]
+
+
+def bgra_rows(picture) -> list[bytes]:
+    return [bytes(c for r, g, b, a in row for c in (b, g, r, a)) for row in picture]
+
+
+def bgr_rows(picture) -> list[bytes]:
+    return [bytes(c for r, g, b, _a in row for c in (b, g, r)) for row in picture]
+
+
+# 32-bit, whole canvas stored (flags 0): alpha is real even without bit 31.
+AKB_RGBA = build_akb(3, 2, 0, bytes(4), (0, 0, 3, 2), bgra_rows(PICTURE))
+# 24-bit, the picture placed at (1, 1) on a 5x4 canvas of opaque white.
+AKB_RGB_CROPPED = build_akb(5, 4, 0xC00000FF, b'\xff\xff\xff\xff', (1, 1, 4, 3), bgr_rows(PICTURE))
+# 24-bit, nothing stored: a solid black canvas.
+AKB_EMPTY = build_akb(4, 3, 0xC00000FF, b'\0\0\0\xff', (0, 0, 0, 0), [])
