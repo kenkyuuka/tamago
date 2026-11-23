@@ -12,6 +12,12 @@ def _normalize(name):
     return re.sub(r'[-_.]+', '-', name).lower()
 
 
+# Standard-library modules added after the oldest Python tamago supports, which
+# it imports behind a version check (``sys.stdlib_module_names`` on that
+# oldest version doesn't list them).
+_NEWER_STDLIB = frozenset({'tomllib'})  # Python 3.11
+
+
 def _iter_sources(root):
     for entry in root.iterdir():
         if entry.is_dir():
@@ -34,7 +40,7 @@ def _third_party_imports():
                 continue
             for name in names:
                 top = name.split('.')[0]
-                if top != 'tamago' and top not in sys.stdlib_module_names:
+                if top != 'tamago' and top not in sys.stdlib_module_names and top not in _NEWER_STDLIB:
                     found.add(top)
     return found
 
