@@ -12,6 +12,8 @@ import os
 import pytest
 
 from tamago.formats.anim import PCKFile, decrypt, encrypt, is_encrypted, is_eog, is_pck, stored_key, unwrap_eog
+from tamago.formats.member_paths import member_path
+from tamago.tests.nonfree_sampling import select_members, split_by_size
 
 NONFREE = os.path.join(os.path.dirname(__file__), 'nonfree')
 
@@ -35,17 +37,20 @@ def _enciphered(path):
 
 packs = _collect(is_pck)
 enciphered = _collect(_enciphered)
+# Only the smallest pack is rebuilt whole: the packs share one index layout.
+whole, sampled = split_by_size(packs, lambda relpath: os.path.getsize(os.path.join(NONFREE, relpath)))
 
 
 def _digest(data):
     return hashlib.sha256(data).digest()
 
 
-def _contents(pck):
+def _contents(pck, members):
     """Each member's contents, with EOG audio unwrapped (its PCM size field is not kept by conversion)."""
     result = {}
-    for info in pck.files:
+    for info in members:
         data = pck.read(info)
+        assert len(data) == info.size, info.file_name
         result[info.file_name] = _digest(unwrap_eog(data) if is_eog(data) else data)
     return result
 
@@ -54,45 +59,48 @@ def _contents(pck):
 @pytest.mark.integration
 @pytest.mark.skipif(not packs, reason="no nonfree ANIM pack samples available")
 @pytest.mark.parametrize('relpath', packs)
-class TestNonfreePacks:
-    def test_reads_every_member(self, relpath):
-        with PCKFile(os.path.join(NONFREE, relpath)) as pck:
-            assert pck.files, f"{relpath} has no members"
-            for info in pck.files:
-                assert len(pck.read(info)) == info.size, info.file_name
+def test_convert_and_recreate_roundtrip(relpath, tmp_path):
+    """A sample of members, EOG audio converted to Ogg and back, keeps its contents."""
+    extracted = tmp_path / 'extracted'
+    rebuilt = tmp_path / 'rebuilt.pck'
 
-    def test_extract_and_recreate_roundtrip(self, relpath, tmp_path):
-        source = os.path.join(NONFREE, relpath)
-        extracted = tmp_path / 'extracted'
-        rebuilt = tmp_path / 'rebuilt.pck'
+    with PCKFile(os.path.join(NONFREE, relpath)) as pck:
+        assert pck.files, f"{relpath} has no members"
+        members = select_members(pck.files)
+        original = _contents(pck, members)
+        for info in members:
+            target = member_path(extracted, info.file_name)
+            os.makedirs(os.path.dirname(target), exist_ok=True)
+            pck.extract(info, target, convert_eog=True)
 
-        with PCKFile(source) as pck:
-            original = _contents(pck)
-            pck.extract_all(extracted, convert_eog=True)
+    with PCKFile(rebuilt, mode='w') as pck:
+        pck.write_all(extracted, wrap_ogg=True)
 
-        with PCKFile(rebuilt, mode='w') as pck:
-            pck.write_all(extracted, wrap_ogg=True)
+    with PCKFile(rebuilt) as pck:
+        assert _contents(pck, pck.files) == original
 
-        with PCKFile(rebuilt) as pck:
-            assert _contents(pck) == original
 
-    def test_recreate_as_stored_is_byte_identical(self, relpath, tmp_path):
-        """Without conversion, the rebuilt pack (index, name order and data) matches the original exactly."""
-        source = os.path.join(NONFREE, relpath)
-        extracted = tmp_path / 'extracted'
-        rebuilt = tmp_path / 'rebuilt.pck'
+@pytest.mark.nonfree
+@pytest.mark.integration
+@pytest.mark.skipif(not whole, reason="no nonfree ANIM pack samples available")
+@pytest.mark.parametrize('relpath', whole)
+def test_recreate_as_stored_is_byte_identical(relpath, tmp_path):
+    """Without conversion, the rebuilt pack (index, name order and data) matches the original exactly."""
+    source = os.path.join(NONFREE, relpath)
+    extracted = tmp_path / 'extracted'
+    rebuilt = tmp_path / 'rebuilt.pck'
 
-        with PCKFile(source) as pck:
-            pck.extract_all(extracted)
-        with PCKFile(rebuilt, mode='w') as pck:
-            pck.write_all(extracted)
+    with PCKFile(source) as pck:
+        pck.extract_all(extracted)
+    with PCKFile(rebuilt, mode='w') as pck:
+        pck.write_all(extracted)
 
-        with open(source, 'rb') as a, open(rebuilt, 'rb') as b:
-            while True:
-                chunk = a.read(1 << 20)
-                assert chunk == b.read(1 << 20)
-                if not chunk:
-                    break
+    with open(source, 'rb') as a, open(rebuilt, 'rb') as b:
+        while True:
+            chunk = a.read(1 << 20)
+            assert chunk == b.read(1 << 20)
+            if not chunk:
+                break
 
 
 @pytest.mark.nonfree

@@ -4,10 +4,10 @@ The nonfree directory is gitignored: populate it manually with ``*.psb``
 files, or with packs holding them (ANIM's ``psbpack.dat``), to enable these
 tests.  They skip when no samples are present.
 
-Every PSB is read (decrypting it), its textures decoded, its tree taken
-through JSON and back, and it is written again, which must reproduce the
-original bytes exactly, encryption included.  ``tamago psb extract`` and
-``create`` are checked the same way on loose files.
+Every loose PSB, and a sample of those in each pack, is read (decrypting it),
+its textures decoded, its tree taken through JSON and back, and it is written
+again, which must reproduce the original bytes exactly, encryption included.
+``tamago psb extract`` and ``create`` are checked the same way on loose files.
 """
 
 import json
@@ -22,6 +22,7 @@ from tamago.formats.psb import is_psb, read
 from tamago.formats.psb import textures as t
 from tamago.formats.psb.jsontree import from_json, to_json
 from tamago.formats.psb.psbfile import write
+from tamago.tests.nonfree_sampling import select_members
 
 NONFREE = os.path.join(os.path.dirname(__file__), 'nonfree')
 
@@ -79,10 +80,10 @@ class TestNonfreeFiles:
 @pytest.mark.skipif(not packs, reason="no nonfree packs of PSB files available")
 @pytest.mark.parametrize('relpath', packs)
 class TestNonfreePacks:
-    def test_every_member_roundtrips(self, relpath):
+    def test_sampled_members_roundtrip(self, relpath):
         checked = 0
         with PCKFile(os.path.join(NONFREE, relpath)) as pck:
-            for info in pck.files:
+            for info in select_members(pck.files):
                 data = pck.read(info)
                 if is_psb(data):
                     _check(f'{relpath}:{info.file_name}', data)

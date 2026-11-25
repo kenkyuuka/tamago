@@ -19,6 +19,16 @@ filesystem) are silently dropped during the first extraction and therefore
 omitted from the comparison — the test only checks that the members that
 did extract also extract cleanly from the rebuilt archive.
 
+For best results, place entire game directories (or symlinks) as
+subdirectories of nonfree/, so TPM-based encryption detection works:
+
+    nonfree/
+        some-game/
+            data.xp3
+            patch.xp3
+            something.tpm
+        standalone.xp3
+
 Skips gracefully when no nonfree samples are present.
 """
 
@@ -30,7 +40,7 @@ import pytest
 from tamago.formats.member_paths import member_path
 from tamago.formats.xp3.detect import auto_detect
 from tamago.formats.xp3.xp3file import XP3File
-from tamago.tests.xp3.nonfree_sampling import select_members
+from tamago.tests.nonfree_sampling import select_members
 
 NONFREE = os.path.join(os.path.dirname(__file__), 'nonfree')
 

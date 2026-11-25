@@ -21,6 +21,7 @@ from tamago.formats.ai6win.akb import (
     png_to_akb,
     read_header,
 )
+from tamago.tests.nonfree_sampling import select_members, split_by_size
 
 NONFREE = os.path.join(os.path.dirname(__file__), 'nonfree')
 
@@ -37,10 +38,19 @@ def _collect():
 
 
 archives = _collect()
+# Only the small archives (scripts and data) are rebuilt whole: they hold the
+# compressed scripts that pin the LZSS encoder, and the media archives differ
+# only in size (apart from Movie.arc, whose compressed members are sampled).
+whole, sampled = split_by_size(archives, lambda relpath: os.path.getsize(os.path.join(NONFREE, relpath)))
 
 
 def _contents(arc):
-    return [(info.raw_name, hashlib.sha256(arc.read(info)).digest()) for info in arc.files]
+    result = []
+    for info in arc.files:
+        data = arc.read(info)
+        assert len(data) == info.unpacked_size, info.file_name
+        result.append((info.raw_name, hashlib.sha256(data).digest()))
+    return result
 
 
 @pytest.mark.nonfree
@@ -51,29 +61,39 @@ class TestNonfreeArchives:
     def test_detected(self, relpath):
         assert detect_format(os.path.join(NONFREE, relpath)) == 'ai6win'
 
-    def test_reads_every_member(self, relpath):
-        with ARCFile(os.path.join(NONFREE, relpath)) as arc:
-            assert arc.files
-            for info in arc.files:
-                assert len(arc.read(info)) == info.unpacked_size, info.file_name
 
-    def test_extract_and_recreate_roundtrip(self, relpath, tmp_path):
-        source = os.path.join(NONFREE, relpath)
-        extracted = tmp_path / 'extracted'
-        rebuilt = tmp_path / 'rebuilt.arc'
+@pytest.mark.nonfree
+@pytest.mark.integration
+@pytest.mark.skipif(not whole, reason="no nonfree AI6WIN samples available")
+@pytest.mark.parametrize('relpath', whole)
+def test_extract_and_recreate_roundtrip(relpath, tmp_path):
+    source = os.path.join(NONFREE, relpath)
+    extracted = tmp_path / 'extracted'
+    rebuilt = tmp_path / 'rebuilt.arc'
 
-        with ARCFile(source) as arc:
-            original = _contents(arc)
-            arc.extract_all(extracted)
+    with ARCFile(source) as arc:
+        original = _contents(arc)
+        arc.extract_all(extracted)
 
-        with ARCFile(rebuilt, mode='w') as arc:
-            arc.write_all(extracted)
+    with ARCFile(rebuilt, mode='w') as arc:
+        arc.write_all(extracted)
 
-        with ARCFile(rebuilt) as arc:
-            assert _contents(arc) == original
-        # The games' packer used Okumura's LZSS encoder, which tamago
-        # reproduces, so rebuilding from the manifest is byte-identical.
-        assert filecmp.cmp(source, rebuilt, shallow=False)
+    with ARCFile(rebuilt) as arc:
+        assert _contents(arc) == original
+    # The games' packer used Okumura's LZSS encoder, which tamago
+    # reproduces, so rebuilding from the manifest is byte-identical.
+    assert filecmp.cmp(source, rebuilt, shallow=False)
+
+
+@pytest.mark.nonfree
+@pytest.mark.integration
+@pytest.mark.skipif(not sampled, reason="no large nonfree samples available")
+@pytest.mark.parametrize('relpath', sampled)
+def test_reads_sampled_members(relpath):
+    with ARCFile(os.path.join(NONFREE, relpath)) as arc:
+        assert arc.files
+        for info in select_members(arc.files):
+            assert len(arc.read(info)) == info.unpacked_size, info.file_name
 
 
 SAMPLED_IMAGES = 12

@@ -6,11 +6,11 @@ files to enable these tests.
 """
 
 import os
-import tempfile
 
 import pytest
 
 from tamago.formats.det.detfile import DETFile
+from tamago.formats.member_paths import member_path
 
 NONFREE = os.path.join(os.path.dirname(__file__), 'nonfree')
 
@@ -35,35 +35,12 @@ skip_no_samples = pytest.mark.skipif(not det_files, reason="no nonfree DET sampl
 @pytest.mark.integration
 @skip_no_samples
 @pytest.mark.parametrize('relpath', det_files)
-class TestNonfreeDETSamples:
-    """Basic reading tests for real DET archives."""
-
-    def test_opens_and_lists_files(self, relpath):
-        """Archive opens without error and has at least one file entry."""
-        path = os.path.join(NONFREE, relpath)
-        with DETFile(path) as det:
-            assert len(det.files) > 0, f"{relpath} has no file entries"
-
-    def test_file_entries_have_names(self, relpath):
-        """Every file entry has a non-empty name."""
-        path = os.path.join(NONFREE, relpath)
-        with DETFile(path) as det:
-            for member in det.files:
-                assert member.file_name, f"empty file_name in {relpath}"
-
-    def test_read_first_file(self, relpath):
-        """The first file in the archive can be read without error."""
-        path = os.path.join(NONFREE, relpath)
-        with DETFile(path) as det:
-            member = det.files[0]
-            data = det.read(member.file_name)
-            assert (
-                len(data) == member.unpacked_size
-            ), f"{relpath}:{member.file_name} read {len(data)} bytes, expected {member.unpacked_size}"
-
-    def test_extract_all(self, relpath):
-        """All files can be extracted without error."""
-        path = os.path.join(NONFREE, relpath)
-        with DETFile(path) as det:
-            with tempfile.TemporaryDirectory() as tmpdir:
-                det.extract_all(tmpdir)
+def test_extracts_every_member(relpath, tmp_path):
+    """The archive lists named members, and every one extracts at its stated size."""
+    with DETFile(os.path.join(NONFREE, relpath)) as det:
+        assert det.files, f"{relpath} has no file entries"
+        for member in det.files:
+            assert member.file_name, f"empty file_name in {relpath}"
+        det.extract_all(tmp_path)
+        for member in det.files:
+            assert os.path.getsize(member_path(tmp_path, member.file_name)) == member.unpacked_size, member.file_name

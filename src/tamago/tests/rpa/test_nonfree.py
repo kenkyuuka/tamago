@@ -31,24 +31,25 @@ def _digest(data):
     return hashlib.sha256(data).digest()
 
 
+def _read(arc, info):
+    data = arc.read(info)
+    assert len(data) == info.size, info.file_name
+    return data
+
+
 @pytest.mark.nonfree
 @pytest.mark.integration
 @skip_no_samples
 @pytest.mark.parametrize('relpath', samples)
 class TestNonfreeRPASamples:
-    def test_reads_every_member(self, relpath):
-        with RPAFile(os.path.join(NONFREE, relpath)) as rpa:
-            assert rpa.files, f"{relpath} has no members"
-            for member in rpa.files:
-                assert len(rpa.read(member)) == member.size, member.file_name
-
     def test_extract_and_recreate_roundtrip(self, relpath, tmp_path):
         source = os.path.join(NONFREE, relpath)
         extracted = tmp_path / 'extracted'
         rebuilt = tmp_path / 'rebuilt.rpa'
 
         with RPAFile(source) as rpa:
-            original = {member.file_name: _digest(rpa.read(member)) for member in rpa.files}
+            assert rpa.files, f"{relpath} has no members"
+            original = {member.file_name: _digest(_read(rpa, member)) for member in rpa.files}
             rpa.extract_all(extracted)
 
         with RPAFile(rebuilt, mode='w') as rpa:

@@ -190,8 +190,9 @@ pip install hatch
 ### Running tests
 
 ```console
-hatch run test                    # run all tests
+hatch run test                    # run all tests except those needing game data
 hatch run test -k test_name       # run a single test by name
+hatch run test-nonfree            # run the tests that use game data in nonfree/
 hatch run cov                     # tests + coverage report
 ```
 
