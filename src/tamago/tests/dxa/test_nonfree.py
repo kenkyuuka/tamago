@@ -32,24 +32,25 @@ def _digest(data):
     return hashlib.sha256(data).digest()
 
 
+def _read(arc, info):
+    data = arc.read(info)
+    assert len(data) == info.size, info.file_name
+    return data
+
+
 @pytest.mark.nonfree
 @pytest.mark.integration
 @skip_no_samples
 @pytest.mark.parametrize('relpath', samples)
 class TestNonfreeDXASamples:
-    def test_reads_every_member(self, relpath):
-        with DXAFile(os.path.join(NONFREE, relpath)) as dxa:
-            assert dxa.files, f"{relpath} has no members"
-            for info in dxa.files:
-                assert len(dxa.read(info)) == info.size, info.file_name
-
     def test_extract_and_recreate_roundtrip(self, relpath, tmp_path):
         source = os.path.join(NONFREE, relpath)
         extracted = tmp_path / 'extracted'
         rebuilt = tmp_path / 'rebuilt.dxa'
 
         with DXAFile(source) as dxa:
-            original = {info.file_name: _digest(dxa.read(info)) for info in dxa.files}
+            assert dxa.files, f"{relpath} has no members"
+            original = {info.file_name: _digest(_read(dxa, info)) for info in dxa.files}
             password, version = dxa.password, dxa.version
             dxa.extract_all(extracted)
 

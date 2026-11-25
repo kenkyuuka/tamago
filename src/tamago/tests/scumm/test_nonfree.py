@@ -5,19 +5,24 @@ The nonfree directory is gitignored: populate it manually with game folders
 these tests. They skip when no samples are present.
 
 SCUMM support is extraction only, so instead of a roundtrip these check that
-every member of every file can be produced: every sound converts to WAV and
-every image to PNG, and without conversion every member is a whole block.
+every member of every file can be produced: sounds convert to WAV and images
+to PNG, and without conversion every member is a whole block.  Conversion is
+checked on a sample of each kind of member (costume cels, object images,
+sounds...), as a game has tens of thousands of costume cels.
 """
 
 import io
 import logging
 import os
+import re
 import struct
+from collections import defaultdict
 
 import pytest
 from PIL import Image
 
 from tamago.formats.scumm import KIND_ROOMS, HEFile, is_he_file
+from tamago.tests.nonfree_sampling import spread
 
 NONFREE = os.path.join(os.path.dirname(__file__), 'nonfree')
 
@@ -32,18 +37,37 @@ def _walk():
 
 files = sorted(os.path.relpath(path, NONFREE) for path in _walk() if is_he_file(path))
 
+CONVERTED_PER_KIND = 64
+
+
+def _kind(name):
+    """A member's kind: the leading word of each part of its name, and its extension.
+
+    ``room-001/costume-0012-body/cel-003.png`` is ``('room', 'costume', 'cel', '.png')``.
+    """
+    parts = name.split('/')
+    return (*(re.match('[a-z]*', part).group() for part in parts), os.path.splitext(name)[1])
+
+
+def _sample(members):
+    """Up to CONVERTED_PER_KIND members of each kind, spread through the file."""
+    kinds = defaultdict(list)
+    for member in members:
+        kinds[_kind(member.file_name)].append(member)
+    return [member for kind in kinds.values() for member in spread(kind, CONVERTED_PER_KIND)]
+
 
 @pytest.mark.nonfree
 @pytest.mark.integration
 @pytest.mark.skipif(not files, reason="no nonfree SCUMM samples available")
 @pytest.mark.parametrize('relpath', files)
 class TestNonfreeFiles:
-    def test_converts_every_member(self, relpath, caplog):
+    def test_converts_sampled_members(self, relpath, caplog):
         he = HEFile(os.path.join(NONFREE, relpath))
         members = he.members()
         assert members, f"{relpath} has no members"
         with caplog.at_level(logging.WARNING, logger='tamago.formats.scumm'):
-            for member in members:
+            for member in _sample(members):
                 produced = he.produce(member)
                 assert produced is not None, f"{member.file_name} was skipped"
                 name, data = produced

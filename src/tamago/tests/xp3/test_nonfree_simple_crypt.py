@@ -21,7 +21,7 @@ import pytest
 from tamago.formats.xp3 import simple_crypt
 from tamago.formats.xp3.detect import auto_detect
 from tamago.formats.xp3.xp3file import XP3File
-from tamago.tests.xp3.nonfree_sampling import may_hold_text
+from tamago.tests.nonfree_sampling import may_hold_text
 
 NONFREE = os.path.join(os.path.dirname(__file__), 'nonfree')
 

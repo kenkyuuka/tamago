@@ -30,7 +30,12 @@ archives = _collect()
 
 
 def _contents(dat):
-    return {info.slot: (info.raw_name, hashlib.sha256(dat.read(info)).digest()) for info in dat.files}
+    result = {}
+    for info in dat.files:
+        data = dat.read(info)
+        assert len(data) == info.size, info.file_name
+        result[info.slot] = (info.raw_name, hashlib.sha256(data).digest())
+    return result
 
 
 @pytest.mark.nonfree
@@ -41,18 +46,13 @@ class TestNonfreeArchives:
     def test_detected(self, relpath):
         assert is_advdx_dat(os.path.join(NONFREE, relpath))
 
-    def test_reads_every_member(self, relpath):
-        with DATFile(os.path.join(NONFREE, relpath)) as dat:
-            assert dat.files
-            for info in dat.files:
-                assert len(dat.read(info)) == info.size, info.file_name
-
     def test_extract_and_recreate_roundtrip(self, relpath, tmp_path):
         source = os.path.join(NONFREE, relpath)
         extracted = tmp_path / 'extracted'
         rebuilt = tmp_path / 'rebuilt.dat'
 
         with DATFile(source) as dat:
+            assert dat.files
             original = _contents(dat)
             params = (dat.kind, dat.game_id, dat.slot_count, dat.trailer)
             # A name that overflowed its field leaves a bad size field, which a
