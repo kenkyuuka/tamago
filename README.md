@@ -21,6 +21,7 @@ Requires Python 3.10 or later.
 | DAT    | BlackRainbow ADVDX (`.dat`/`.pak`; also `_BMD` images) | yes | yes |
 | PSB    | E-mote models (versions 2–4; e.g. from ANIM's `psbpack.dat`) | yes | yes |
 | ARC    | AI6WIN (elf, Silky's; also AKB images) | yes | yes |
+| ARC    | Silky's (Silky's Sakura; length-prefixed names; also AKB images) | yes | yes |
 | GPK/VPK | Black Cyc (also Cyc No-nos, CYCLET) | yes | yes |
 | HE0–HE4 | SCUMM, Humongous Entertainment (Freddi Fish 1–5) | yes | no |
 
@@ -95,6 +96,16 @@ tamago create --format ai6win layer_dir Layer.arc         # PNGs are encoded bac
 
 tamago ai6win decode-akb akb_dir png_dir                  # standalone AKB <-> PNG conversion
 tamago ai6win encode-akb png_dir akb_dir
+```
+
+Silky's Sakura games (`Script.arc`, `data.arc`, `layer.arc`, `voice.arc`, ...) use a related archive with variable-length index entries, handled as `silky`. Extraction writes `_silky_manifest.json` in the same way, and rebuilding an unmodified archive reproduces it byte for byte. The games' indexes are sorted by name, so new files take their sorted places. Scripts and data (`.mes`, `.lib`, `.bin`, `.area`, `.brt`) are compressed by default. The `layer.arc` images are AKB files, converted with `--convert-akb` as for AI6WIN:
+
+```bash
+tamago extract Script.arc script_dir
+tamago create --format silky script_dir Script.arc
+
+tamago silky extract --convert-akb layer.arc layer_dir   # AKB images become PNG
+tamago create --format silky layer_dir layer.arc         # PNGs are encoded back to AKB
 ```
 
 Black Cyc packs come in pairs: an index and a data file with the same name, `.gtb` + `.gpk` for `.dwq` images and `.vtb` + `.vpk` for `.vaw` voices. Give either file to `extract`. `create` writes both, and rebuilding an extracted pack reproduces the original files byte for byte:
