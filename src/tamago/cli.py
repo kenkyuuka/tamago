@@ -15,6 +15,7 @@ from tamago.formats.med.medfile import is_med_header
 from tamago.formats.psb.psbfile import MAGIC as PSB_MAGIC
 from tamago.formats.rpa.rpafile import RPA_MAGIC
 from tamago.formats.scumm.hefile import is_he_file
+from tamago.formats.silky.arcfile import is_silky_arc
 from tamago.formats.xp3.models import XP3_MAGIC
 from tamago.formats.yuris.ypf import YPF_MAGIC
 
@@ -86,6 +87,8 @@ def detect_format(path):
             return 'advhd'
         if is_ai6win_arc(path):
             return 'ai6win'
+        if is_silky_arc(path):
+            return 'silky'
     fmt = _detect_by_extension(path)
     if fmt is None and is_pck(path):
         # ANIM packs have no signature either: recognised by an index that

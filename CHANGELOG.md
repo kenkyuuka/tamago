@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Added
+
+- Silky's `.arc` archives with length-prefixed names, used by Silky's Sakura games (`Script.arc`, `data.arc`, `layer.arc`, `effect.arc`, `music.arc`, `voice.arc`): extract and create, as format `silky`. Like AI6WIN archives they have no signature, so tamago recognises them by their index. Extraction writes a manifest (`_silky_manifest.json`) recording the members' order and compression, and rebuilding an unmodified archive reproduces it byte for byte. New members take their sorted places, since the games' indexes are sorted by name. Scripts and data are compressed by default and media stored; `--compress` and `--no-compress` override this.
+
 ## 1.8.0 — 2026-11-23
 
 ### Added
