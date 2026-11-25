@@ -22,6 +22,7 @@ Requires Python 3.10 or later.
 | PSB    | E-mote models (versions 2–4; e.g. from ANIM's `psbpack.dat`) | yes | yes |
 | ARC    | AI6WIN (elf, Silky's; also AKB images) | yes | yes |
 | ARC    | Silky's (Silky's Sakura; length-prefixed names; also AKB images) | yes | yes |
+| PFS    | Artemis Engine (versions 2, 6 and 8; also patch archives `.pfs.000`, ...) | yes | yes |
 | GPK/VPK | Black Cyc (also Cyc No-nos, CYCLET) | yes | yes |
 | HE0–HE4 | SCUMM, Humongous Entertainment (Freddi Fish 1–5) | yes | no |
 
@@ -106,6 +107,14 @@ tamago create --format silky script_dir Script.arc
 
 tamago silky extract --convert-akb layer.arc layer_dir   # AKB images become PNG
 tamago create --format silky layer_dir layer.arc         # PNGs are encoded back to AKB
+```
+
+Artemis Engine games (e.g. Black LILITH's *ママは対魔忍*) keep their resources in `root.pfs`, with patch archives `root.pfs.000`, `root.pfs.001`, ... beside it. Each patch archive is a complete archive on its own, extracted separately. Versions 2, 6 and 8 are supported; version 8 members are encrypted with a key derived from the index. Extraction writes `_pfs_manifest.json`, recording the members' data order, the version and the name encoding, and rebuilding an unmodified archive reproduces it byte for byte. Without a manifest, `create` writes a version 8 archive with cp932 names; `--version` and `--encoding utf-8` override either:
+
+```bash
+tamago extract root.pfs.002 scenario_dir
+tamago create --format pfs scenario_dir root.pfs.002
+tamago pfs create --version 2 game_dir root.pfs   # unencrypted version 2 archive
 ```
 
 Black Cyc packs come in pairs: an index and a data file with the same name, `.gtb` + `.gpk` for `.dwq` images and `.vtb` + `.vpk` for `.vaw` voices. Give either file to `extract`. `create` writes both, and rebuilding an extracted pack reproduces the original files byte for byte:

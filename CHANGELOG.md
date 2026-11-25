@@ -9,6 +9,8 @@ All notable changes to this project will be documented in this file.
 - Silky's `.arc` archives with length-prefixed names, used by Silky's Sakura games (`Script.arc`, `data.arc`, `layer.arc`, `effect.arc`, `music.arc`, `voice.arc`): extract and create, as format `silky`. Like AI6WIN archives they have no signature, so tamago recognises them by their index. Extraction writes a manifest (`_silky_manifest.json`) recording the members' order and compression, and rebuilding an unmodified archive reproduces it byte for byte. New members take their sorted places, since the games' indexes are sorted by name. Scripts and data are compressed by default and media stored; `--compress` and `--no-compress` override this.
 - AKB image conversion for Silky's archives: `tamago silky extract --convert-akb` writes the `layer.arc` images as PNG, and `create` encodes PNGs back to AKB, as for AI6WIN. An unedited `layer.arc` converted to PNG and back is byte-identical to the original, and a new PNG becomes an `.AKB` member in its sorted place.
 
+- Artemis Engine `.pfs` archives, versions 2, 6 and 8 (tested with Black LILITH's *ママは対魔忍*, α-MODEL's *美佐子37歳* and Inohead Studio's *ビッチ家族変態な日常*): extract and create, as format `pfs`. Patch archives such as `root.pfs.000` are recognised too. Version 8 members are decrypted and encrypted with the archive's key, the SHA-1 hash of its index. Extraction writes a manifest (`_pfs_manifest.json`) recording the members' data order, version and name encoding, and rebuilding an unmodified archive reproduces it byte for byte. Without a manifest, `create` writes version 8 with cp932 names; `--version` and `--encoding` override this. The index is always sorted by name, as in the games' archives.
+
 ## 1.8.0 — 2026-11-23
 
 ### Added

@@ -12,6 +12,7 @@ from tamago.formats.blackrainbow.datfile import is_advdx_dat
 from tamago.formats.dxa.dxafile import is_dxa
 from tamago.formats.livemaker.vffile import VF_MAGIC as LIVEMAKER_MAGIC
 from tamago.formats.med.medfile import is_med_header
+from tamago.formats.pfs.pfsfile import is_pfs
 from tamago.formats.psb.psbfile import MAGIC as PSB_MAGIC
 from tamago.formats.rpa.rpafile import RPA_MAGIC
 from tamago.formats.scumm.hefile import is_he_file
@@ -73,6 +74,10 @@ def detect_format(path):
         return 'livemaker'
     if is_med_header(header):
         return 'med'
+    if header[:2] == b'pf' and is_pfs(path):
+        # Artemis archives start with "pf" and a version digit; the index
+        # must parse too, since two letters are a weak signature.
+        return 'pfs'
     if is_he_file(path):
         # SCUMM files start with a block tag, often XORed with 0x69.
         return 'scumm'
