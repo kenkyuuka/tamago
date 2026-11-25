@@ -5,10 +5,12 @@ import sys
 import pytest
 
 from tamago.cli import detect_format, get_format_handlers, main
+from tamago.formats.ai6win.akb import decode_akb, encode_akb
 from tamago.formats.silky import MANIFEST_NAME, ARCFile
 from tamago.formats.silky.handler import SilkyHandler
+from tamago.tests.ai6win.samples import AKB_RGBA
 from tamago.tests.ai6win.samples import ARCHIVE as AI6WIN_ARCHIVE
-from tamago.tests.silky.samples import ARCHIVE, CONTENTS
+from tamago.tests.silky.samples import ARCHIVE, CONTENTS, build_arc
 
 
 def _run(monkeypatch, *argv):
@@ -91,3 +93,16 @@ class TestCommands:
             _run(monkeypatch, 'silky', 'create', src, tmp_path / 'new.arc')
         assert exc.value.code == 1
         assert 'manifest' in capsys.readouterr().err
+
+
+@pytest.mark.integration
+class TestAKBCommands:
+    def test_extract_convert_and_create(self, tmp_path, monkeypatch):
+        akb = encode_akb(decode_akb(AKB_RGBA))
+        archive = tmp_path / 'layer.arc'
+        archive.write_bytes(build_arc([(b'ALICE.AKB', akb, len(akb))]))
+        out = tmp_path / 'out'
+        _run(monkeypatch, 'silky', 'extract', '--convert-akb', archive, out)
+        assert sorted(p.name for p in out.iterdir()) == ['ALICE.png', MANIFEST_NAME]
+        _run(monkeypatch, 'create', '--format', 'silky', out, tmp_path / 'again.arc')
+        assert (tmp_path / 'again.arc').read_bytes() == archive.read_bytes()

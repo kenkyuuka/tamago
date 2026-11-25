@@ -13,6 +13,7 @@ import os
 import pytest
 
 from tamago.cli import detect_format
+from tamago.formats.ai6win.akb import FLAG_RGB, INCREMENTAL_MAGIC, akb_to_png, decode_akb, png_to_akb, read_header
 from tamago.formats.silky import ARCFile
 
 NONFREE = os.path.join(os.path.dirname(__file__), 'nonfree')
@@ -67,3 +68,38 @@ class TestNonfreeArchives:
         # The games' packer used Okumura's LZSS encoder, which tamago
         # reproduces, so an unmodified archive rebuilds byte for byte.
         assert filecmp.cmp(source, rebuilt, shallow=False)
+
+
+SAMPLED_IMAGES = 12
+"""How many of each archive's images (the smallest stored) the image tests use: decoding every one takes minutes."""
+
+
+@pytest.mark.nonfree
+@pytest.mark.integration
+@pytest.mark.skipif(not archives, reason="no nonfree Silky's samples available")
+@pytest.mark.parametrize('relpath', archives)
+def test_images_convert_and_roundtrip(relpath, tmp_path):
+    """Convert a sample of the archive's AKB images to PNG and back.
+
+    The smallest images (picked from the index alone) include both bit
+    depths and empty ones.  Each group's image with the fewest pixels must
+    re-encode byte for byte; the others must decode at their stated size.
+    """
+    with ARCFile(os.path.join(NONFREE, relpath)) as arc:
+        infos = sorted((i for i in arc.files if i.file_name.lower().endswith('.akb')), key=lambda i: i.size)
+        if not infos:
+            pytest.skip("no AKB images in this archive")
+        cheapest: dict = {}
+        for info in infos[:SAMPLED_IMAGES]:
+            data = arc.read(info)
+            header = read_header(data)
+            if header.magic == INCREMENTAL_MAGIC:
+                continue
+            assert decode_akb(data).size == (header.width, header.height), info.file_name
+            pixels = (header.right - header.left) * (header.bottom - header.top)
+            group = (bool(header.flags & FLAG_RGB), pixels == 0)
+            if group not in cheapest or pixels < cheapest[group][0]:
+                cheapest[group] = (pixels, info.file_name, data)
+        assert arc.extract(infos[0], tmp_path / infos[0].file_name, convert_akb=True).endswith('.png')
+    for _pixels, name, data in cheapest.values():
+        assert png_to_akb(akb_to_png(data)) == data, name

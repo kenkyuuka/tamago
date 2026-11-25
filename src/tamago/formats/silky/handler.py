@@ -13,11 +13,15 @@ class SilkyHandler:
 
     ``create`` compresses members as the manifest records, or else by
     extension; ``--compress`` and ``--no-compress`` override this for every
-    member.
+    member.  PNG files are encoded as AKB images.
     """
 
     def add_extract_args(self, parser):
-        pass
+        parser.add_argument(
+            '--convert-akb',
+            action='store_true',
+            help='write AKB images as PNG files (create converts them back)',
+        )
 
     def add_create_args(self, parser):
         pass
@@ -25,7 +29,9 @@ class SilkyHandler:
     def cmd_extract(self, args):
         try:
             with ARCFile(args.input) as arc:
-                arc.extract_all(args.output, glob=getattr(args, 'glob', None))
+                arc.extract_all(
+                    args.output, glob=getattr(args, 'glob', None), convert_akb=getattr(args, 'convert_akb', False)
+                )
         except ValueError as e:
             _fail(e)
 

@@ -14,6 +14,11 @@ There is no signature, so archives are recognised by their structure
 recording the members' order and compression, and any name bytes cp932 cannot
 reproduce; :meth:`ARCFile.write_all` follows it, rebuilding an unmodified
 archive byte for byte.
+
+The images in ``layer.arc`` are AKB files, the same format as AI6WIN's.  With
+conversion enabled they are extracted as PNG files
+(:mod:`tamago.formats.ai6win.akb`) and encoded back when the archive is
+created; the manifest records which file holds each member.
 """
 
 import fnmatch
@@ -29,6 +34,7 @@ from typing import BinaryIO
 from construct import GreedyBytes, Int8ub, Int32ub, Prefixed, StreamError, Struct
 
 from tamago.formats.ai6win import lzss
+from tamago.formats.ai6win.akb import INCREMENTAL_MAGIC, akb_to_png, is_akb, png_to_akb
 from tamago.formats.member_paths import member_path, plan_extraction
 
 logger = logging.getLogger(__name__)
@@ -45,6 +51,7 @@ Entry = Struct(
 )
 HEADER_SIZE = 4
 MAX_U32 = 0xFFFFFFFF
+_PNG_MAGIC = b'\x89PNG\r\n\x1a\n'
 
 # Member types the games' packer compressed; everything else (audio, AKB
 # images) was stored.
@@ -143,13 +150,28 @@ def is_silky_arc(path: str | os.PathLike) -> bool:
     return not any(c < ' ' or c == '\x7f' for info in infos for c in info.file_name)
 
 
-class _Pending:
-    __slots__ = ('source', 'raw_name', 'compress')
+def _is_png(path: str | os.PathLike) -> bool:
+    with open(path, 'rb') as f:
+        return f.read(len(_PNG_MAGIC)) == _PNG_MAGIC
 
-    def __init__(self, source: str, raw_name: bytes, compress: bool):
+
+def _is_akb_name(name: bytes) -> bool:
+    return name.lower().endswith(b'.akb')
+
+
+def _akb_name(name: str) -> str:
+    """The member name for a PNG file called *name*: ``.png`` becomes ``.AKB``, as the games spell it."""
+    return name[:-4] + '.AKB'
+
+
+class _Pending:
+    __slots__ = ('source', 'raw_name', 'compress', 'encode_akb')
+
+    def __init__(self, source: str, raw_name: bytes, compress: bool, encode_akb: bool):
         self.source = source
         self.raw_name = raw_name
         self.compress = compress
+        self.encode_akb = encode_akb
 
 
 class ARCFile:
@@ -239,20 +261,46 @@ class ARCFile:
             return lzss.decompress(data, info.unpacked_size)
         return data
 
-    def extract(self, member: 'ARCInfo | str', path: str | os.PathLike) -> str:
-        """Write the contents of *member* to a new file at *path*, returning the path written."""
-        data = self.read(member)
+    @staticmethod
+    def png_name(name: str) -> str:
+        """The name a member extracted as *name* gets when converted to PNG."""
+        if name.lower().endswith('.akb'):
+            return name[:-4] + '.png'
+        return name + '.png'
+
+    @staticmethod
+    def _convertible(info: ARCInfo, data: bytes) -> bool:
+        if not is_akb(data):
+            return False
+        if data[:4] == INCREMENTAL_MAGIC:
+            logger.warning('%s is an incremental AKB+ image; extracting it unconverted', info.file_name)
+            return False
+        return True
+
+    def extract(self, member: 'ARCInfo | str', path: str | os.PathLike, convert_akb: bool = False) -> str:
+        """Write the contents of *member* to a new file at *path*, returning the path written.
+
+        With *convert_akb*, an AKB image is written as PNG, and an ``.akb``
+        suffix of *path* becomes ``.png`` (otherwise ``.png`` is appended).
+        """
+        info = member if isinstance(member, ARCInfo) else self.getinfo(member)
+        data = self.read(info)
         path = os.fspath(path)
+        if convert_akb and self._convertible(info, data):
+            data = akb_to_png(data)
+            directory, base = os.path.split(path)
+            path = os.path.join(directory, self.png_name(base))
         with open(path, 'xb') as f:
             f.write(data)
         return path
 
-    def extract_all(self, path: str | os.PathLike, glob: str | None = None):
+    def extract_all(self, path: str | os.PathLike, glob: str | None = None, convert_akb: bool = False):
         """Extract members to directory *path*, with a manifest of their order and compression.
 
         If *glob* is given, only members whose names match it are extracted
-        (and listed in the manifest).  Raises ValueError, before writing
-        anything, if a selected member's name would place it outside *path*.
+        (and listed in the manifest).  *convert_akb* writes AKB images as PNG,
+        as in :meth:`extract`.  Raises ValueError, before writing anything, if
+        a selected member's name would place it outside *path*.
         """
         self._check_readable()
         plan = plan_extraction(self.files, path, glob)
@@ -261,19 +309,32 @@ class ARCFile:
             if os.path.normcase(filepath) == os.path.normcase(manifest_path):
                 raise ValueError(f"Member {info.file_name!r} would overwrite the manifest {MANIFEST_NAME}")
         os.makedirs(path, exist_ok=True)
+        claimed = {info.file_name.lower() for info in self.files} | {MANIFEST_NAME.lower()}
         members = []
-        for info, filepath in plan:
-            os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        for info, planned in plan:
+            os.makedirs(os.path.dirname(planned), exist_ok=True)
+            filepath = planned
+            data = self.read(info)
+            file_name = info.file_name
+            if convert_akb and self._convertible(info, data):
+                file_name = self.png_name(info.file_name)
+                if file_name.lower() in claimed:
+                    file_name = info.file_name + '.png'
+                claimed.add(file_name.lower())
+                data = akb_to_png(data)
+                filepath = member_path(path, file_name)
             with open(filepath, 'xb') as f:
-                f.write(self.read(info))
-            members.append(self._manifest_entry(info))
+                f.write(data)
+            members.append(self._manifest_entry(info, file_name))
         with open(manifest_path, 'x', encoding='utf-8') as f:
             json.dump({'format': MANIFEST_FORMAT, 'members': members}, f, ensure_ascii=False, indent=1)
             f.write('\n')
 
     @staticmethod
-    def _manifest_entry(info: ARCInfo) -> dict:
+    def _manifest_entry(info: ARCInfo, file_name: str) -> dict:
         entry: dict = {'name': info.file_name, 'compressed': info.compressed}
+        if file_name != info.file_name:
+            entry['file'] = file_name
         try:
             exact = info.file_name.encode('cp932') == info.raw_name
         except UnicodeEncodeError:
@@ -299,15 +360,20 @@ class ARCFile:
     ):
         """Add the file at *filepath* as a member, after those already added.
 
-        The member is named *arcname* (default: the file's base name), or
-        stored with the exact name bytes *raw_name*.  It is compressed if
+        The member is named *arcname* (default: the file's base name, with a
+        ``.png`` suffix changed to ``.AKB`` for a PNG file), or stored with
+        the exact name bytes *raw_name*.  A PNG file whose member name ends in
+        ``.akb`` is encoded as an AKB image.  The member is compressed if
         *compress* is True; the archive's own *compress* setting overrides
         this, and if neither is given the member's extension decides.
         """
         self._check_writable()
         filepath = os.fspath(filepath)
+        is_png = _is_png(filepath)
         if raw_name is None:
             name = arcname if arcname is not None else os.path.basename(filepath)
+            if arcname is None and is_png and name.lower().endswith('.png'):
+                name = _akb_name(name)
             try:
                 raw_name = name.encode('cp932')
             except UnicodeEncodeError:
@@ -317,14 +383,15 @@ class ARCFile:
             compress = self.compress
         elif compress is None:
             compress = should_compress(raw_name.decode('cp932', 'replace'))
-        self._pending.append(_Pending(filepath, raw_name, compress))
+        self._pending.append(_Pending(filepath, raw_name, compress, is_png and _is_akb_name(raw_name)))
 
     def write_all(self, path: str | os.PathLike, glob: str | None = None):
         """Add the files under directory *path*, following its manifest if it has one.
 
         Members listed in the manifest keep their recorded names, order and
         compression.  Other files are named by their path relative to *path*
-        (with ``/`` separators).  The games' indexes are sorted by name bytes,
+        (with ``/`` separators); a PNG file named ``*.png`` becomes an AKB
+        member named ``*.AKB``.  The games' indexes are sorted by name bytes,
         so if the manifest's order is sorted (or there is no manifest), every
         member is written in that order and new files take their sorted
         places; otherwise new files follow the listed ones, sorted.  *glob*
@@ -340,7 +407,7 @@ class ARCFile:
 
         if manifest_path.is_file():
             for entry in self._read_manifest(manifest_path):
-                source = member_path(root, entry['name'])
+                source = member_path(root, entry['file'])
                 listed_paths.add(os.path.normcase(source))
                 if glob and not fnmatch.fnmatch(entry['name'], glob):
                     continue
@@ -360,6 +427,8 @@ class ARCFile:
                     continue
                 if glob and not fnmatch.fnmatch(name, glob):
                     continue
+                if name.lower().endswith('.png') and _is_png(source):
+                    name = _akb_name(name)
                 try:
                     raw = name.encode('cp932')
                 except UnicodeEncodeError:
@@ -387,18 +456,32 @@ class ARCFile:
                 name = m['name']
                 if not isinstance(name, str) or not isinstance(m['compressed'], bool):
                     raise ValueError(f"bad member entry {m!r}")
+                file_name = m.get('file', name)
+                if not isinstance(file_name, str):
+                    raise ValueError(f"bad member entry {m!r}")
                 raw = bytes.fromhex(m['name_hex']) if 'name_hex' in m else name.encode('cp932')
-                members.append({'name': name, 'raw_name': raw, 'compressed': m['compressed']})
+                members.append({'name': name, 'file': file_name, 'raw_name': raw, 'compressed': m['compressed']})
         except (OSError, KeyError, TypeError, ValueError, AttributeError) as e:
             raise ValueError(f"Invalid Silky's manifest {manifest_path}: {e}") from None
         return members
+
+    @staticmethod
+    def _member_data(p: _Pending) -> bytes:
+        with open(p.source, 'rb') as f:
+            data = f.read()
+        if p.encode_akb:
+            try:
+                data = png_to_akb(data)
+            except ValueError as e:
+                raise ValueError(f"{p.source}: {e}") from None
+        return data
 
     def _finalize(self):
         """Write the index and member data.
 
         Stored members are copied straight from their files, so large voice
-        archives are never held in memory; compressed members are processed
-        one at a time.
+        archives are never held in memory; compressed members and images
+        converted from PNG are processed one at a time.
         """
         assert self.fp is not None
         fp = self.fp
@@ -410,10 +493,9 @@ class ARCFile:
         entries = []
         offset = data_start
         for p in self._pending:
-            if p.compress:
-                with open(p.source, 'rb') as f:
-                    data = f.read()
-                packed = lzss.compress(data)
+            if p.compress or p.encode_akb:
+                data = self._member_data(p)
+                packed = lzss.compress(data) if p.compress else data
                 # Equal sizes would read back as a stored member.
                 stored = packed if len(packed) != len(data) else data
                 fp.write(stored)
